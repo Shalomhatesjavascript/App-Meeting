@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+set -eu
+
+# Pre-commit hook: format + lint only staged files using Biome.
+# - Uses Biome's built-in staged mode to avoid touching unrelated files.
+# - Re-stages any changes Biome applies.
+#
+# Important: Biome will error if none of the provided/staged paths are eligible
+# (for example, only .gitignore changes). We explicitly skip in that case.
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "bun is required to run biome from this repo. Please install bun." >&2
+  exit 1
+fi
+
+# Collect staged paths (added/copied/modified/renamed).
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+if [ -z "${STAGED_FILES}" ]; then
+  exit 0
+fi
+
+# Only run Biome when there are staged files Biome can process.
+# Keep this conservative (code + common config formats) to avoid hook failures.
+BIOME_CANDIDATES="$(printf '%s\n' "${STAGED_FILES}" | awk '
+  /\.(ts|tsx|js|jsx|mjs|cjs|json|jsonc|css|scss|md)$/ { print }
+')"
+
+if [ -z "${BIOME_CANDIDATES}" ]; then
+  echo "Skipping Biome: no staged files match supported extensions."
+  exit 0
+fi
+
+echo "Running Biome on staged files..."
+bunx --yes biome check --write --staged
+
+# If Biome made changes, ensure they're included in the commit.
+git add -A
