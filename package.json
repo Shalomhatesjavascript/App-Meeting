@@ -1,0 +1,23 @@
+{
+  "name": "shalom-social-media",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "turbo": "^2.7.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+  }, "workspaces": [
+     "apps/*",
+     "packages/*"
+   ],
+   "packageManager": "bun@1.3.0",  "scripts": {
+     "build": "turbo run build",
+     "dev": "turbo run dev",
+     "lint": "turbo run lint"
+   },
+}
