@@ -1,0 +1,4 @@
+{
+"postCreateCommand": "npm i -g bun && bun i -g turbo && echo 'export PATH=/home/codespace/.bun/bin:$PATH' >> ~/.bashrc"
+
+}
