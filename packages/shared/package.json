@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome lint .",
+    "lint": "biome lint ./ --write",
+    "format": "biome format ./ --write",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "devDependencies": {

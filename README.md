@@ -8,7 +8,7 @@ This repository is a monorepo managed with Turborepo and Bun workspaces (`apps/*
 
 ### Prerequisites
 
-- **Bun** (see `package.json` `packageManager`)
+- **Bun** (see `package.json` `packageManager`) (Just run `npm install -g bun` if you don't have it)
 - **Git**
 
 ### Install dependencies
