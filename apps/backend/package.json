@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
+    "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "elysia": "latest"
   },
