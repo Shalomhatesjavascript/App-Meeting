@@ -7,7 +7,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "biome lint ./ --write",
     "format": "biome format ./ --write",
-    "test": "bun test"
+    "test": "bun test",
+    "gen:types": "wrangler types"
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
@@ -16,7 +17,8 @@
   },
   "devDependencies": {
     "bun-types": "latest",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "wrangler": "^4.75.0"
   },
   "module": "src/index.ts"
 }

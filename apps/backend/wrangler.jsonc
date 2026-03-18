@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Top-level configuration
+  "name": "social-media-babcock-test",
+  "main": "src/index.ts",
+  // Set this to today's date
+  "compatibility_date": "2026-03-18",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "social-media-babcock-test-db",
+      "database_id": "80852c4f-67fb-4308-8531-3b7001026280",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true }
+}
