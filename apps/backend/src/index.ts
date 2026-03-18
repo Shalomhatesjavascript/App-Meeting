@@ -12,6 +12,7 @@ import userInterestsRoutes from './routes/user-interests/route'
 import usersRoutes from './routes/users/route'
 
 const app = new Elysia({ adapter: CloudflareAdapter })
+  .get('/health', ({status}) => status(200) )
   .use(authRoutes)
   .use(usersRoutes)
   .use(profilesRoutes)
@@ -22,7 +23,6 @@ const app = new Elysia({ adapter: CloudflareAdapter })
   .use(messagesRoutes)
   .use(subscriptionsRoutes)
   .use(adminLogsRoutes)
-  .get('/', () => 'Hello Elysia')
   .compile()
 
 export type ElysiaApp = typeof app
