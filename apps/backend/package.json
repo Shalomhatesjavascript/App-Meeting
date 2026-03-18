@@ -25,5 +25,8 @@
     "drizzle-kit": "^0.31.10",
     "wrangler": "^4.75.0"
   },
-  "module": "src/index.ts"
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
 }

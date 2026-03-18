@@ -6,5 +6,3 @@ const app = new Elysia({ adapter: CloudflareAdapter }).get('/', () => 'Hello Ely
 export type ElysiaApp = typeof app
 
 export default app
-
-console.log(`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`)
