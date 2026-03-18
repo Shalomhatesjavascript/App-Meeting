@@ -16,6 +16,7 @@
       "version": "1.0.50",
       "dependencies": {
         "@repo/shared": "workspace:*",
+        "better-ts-enum": "^0.4.0",
         "dotenv": "^17.3.1",
         "drizzle-orm": "^0.45.1",
         "elysia": "latest",
@@ -343,6 +344,8 @@
     "babel-plugin-react-compiler": ["babel-plugin-react-compiler@1.0.0", "", { "dependencies": { "@babel/types": "^7.26.0" } }, "sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw=="],
 
     "baseline-browser-mapping": ["baseline-browser-mapping@2.9.14", "", { "bin": { "baseline-browser-mapping": "dist/cli.js" } }, "sha512-B0xUquLkiGLgHhpPBqvl7GWegWBUNuujQ6kXd/r1U38ElPT6Ok8KZ8e+FpUGEc2ZoRQUzq/aUnaKFc/svWUGSg=="],
+
+    "better-ts-enum": ["better-ts-enum@0.4.0", "", { "peerDependencies": { "typescript": ">=4.5.0" }, "optionalPeers": ["typescript"] }, "sha512-L3unPQkR1nChxbQKukO6fVMVnS1aN+8KN9vFMNvNYw34l/zIauecZxdQtrUqe4DTQWWgBqysxCX/77Ew+iUmoQ=="],
 
     "blake3-wasm": ["blake3-wasm@2.1.5", "", {}, "sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g=="],
 

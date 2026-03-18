@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
+    "better-ts-enum": "^0.4.0",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "elysia": "latest",
