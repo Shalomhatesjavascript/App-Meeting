@@ -5,6 +5,6 @@ import type { ElysiaApp } from '@repo/backend'
  *
  * All your api calls to the backend must be called via this
  */
-const api = treaty<ElysiaApp>(import.meta.env['VITE_BACKEND_URL'] || '')
+const api = treaty<ElysiaApp>(import.meta.env.VITE_BACKEND_URL || '')
 
 export default api

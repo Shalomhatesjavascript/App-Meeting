@@ -21,7 +21,8 @@
     "ci:check": "biome check .",
     "ci:typecheck": "turbo run typecheck",
     "ci:build": "turbo run build",
-    "ci": "bun run ci:check && bun run ci:typecheck && bun run ci:build"
+    "ci": "bun run ci:check && bun run ci:typecheck && bun run ci:build",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "@types/bun": "latest",
