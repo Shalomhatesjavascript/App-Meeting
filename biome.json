@@ -1,6 +1,18 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
-  "root": true,
+
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "recommended": true,
+        "useSortedAttributes": "on",
+        "useSortedKeys": "on",
+        "useSortedProperties": "on"
+      }
+    },
+    "enabled": true
+  },
 
   "files": {
     "ignoreUnknown": false,
@@ -27,23 +39,14 @@
     "lineWidth": 100
   },
 
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
-
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  },
-
   "javascript": {
     "formatter": {
-      "quoteStyle": "single",
-      "jsxQuoteStyle": "double",
-      "trailingCommas": "all",
-      "semicolons": "asNeeded",
       "arrowParentheses": "always",
-      "bracketSpacing": true
+      "bracketSpacing": true,
+      "jsxQuoteStyle": "double",
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all"
     }
   },
 
@@ -51,5 +54,28 @@
     "formatter": {
       "enabled": true
     }
+  },
+
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "nursery": {
+        "useSortedClasses": {
+          "fix": "safe",
+          "level": "error",
+          "options": {
+            "attributes": ["class", "className"],
+            "functions": ["clsx", "cn", "cva"]
+          }
+        }
+      },
+      "recommended": true
+    }
+  },
+  "root": true,
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
   }
 }

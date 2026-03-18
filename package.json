@@ -1,33 +1,43 @@
 {
+  "dependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "@types/bun": "latest",
+    "turbo": "^2.7.3",
+    "typescript": "^5"
+  },
+  "lint-staged": {
+    "*": [
+      "biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
+    ]
+  },
   "name": "shalom-social-media",
-  "private": true,
-  "type": "module",
   "packageManager": "bun@1.3.0",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "check": "biome check .",
+    "check:staged": "biome check --write --staged",
+    "check:write": "biome check --write .",
+    "ci": "bun run ci:check && bun run ci:typecheck && bun run ci:build",
+    "ci:build": "turbo run build",
+    "ci:check": "biome check .",
+    "ci:typecheck": "turbo run typecheck",
+    "dev": "turbo run dev",
+    "format": "biome format .",
+    "format:write": "biome format --write .",
+    "hooks:setup": "git config core.hooksPath .githooks",
+    "lint": "turbo run lint",
+    "lint:biome": "biome lint .",
+    "prepare": "husky",
+    "test": "turbo run test"
+  },
+  "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "biome format .",
-    "format:write": "biome format --write .",
-    "lint:biome": "biome lint .",
-    "check": "biome check .",
-    "check:write": "biome check --write .",
-    "check:staged": "biome check --write --staged",
-    "hooks:setup": "git config core.hooksPath .githooks",
-    "ci:check": "biome check .",
-    "ci:typecheck": "turbo run typecheck",
-    "ci:build": "turbo run build",
-    "ci": "bun run ci:check && bun run ci:typecheck && bun run ci:build",
-    "test": "turbo run test"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@biomejs/biome": "^2.0.0",
-    "turbo": "^2.7.3",
-    "typescript": "^5"
-  }
+  ]
 }
