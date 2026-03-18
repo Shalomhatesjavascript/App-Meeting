@@ -1,48 +1,46 @@
-import { Elysia } from 'elysia'
-import * as v from 'valibot'
 import {
   SubscriptionCreateSchema,
-  SubscriptionUpdateSchema,
   SubscriptionSchema,
+  SubscriptionUpdateSchema,
 } from '@repo/shared'
+import { Elysia } from 'elysia'
+import * as v from 'valibot'
 
-const subscriptionsRoutes = new Elysia({ prefix: '/subscriptions' })
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
+
+const subscriptionsRoutes = new Elysia({
+  prefix: getApiRoutePrefixUrl(ApiRoutePrefix.subscriptions),
+})
   // Get all subscriptions (admin or analytics)
-  .get(
-    '/',
-    async () => {
-      // Dummy response: array of subscriptions
-      return {
-        data: [
-          {
-            id: 1,
-            user_id: 1,
-            tier: 'free',
-            start_date: new Date().toISOString(),
-            expiry_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-            payment_ref: 'dummy-payment-ref',
-          },
-        ],
-      }
-    }
-  )
-  // Get current user's subscription
-  .get(
-    '/me',
-    async () => {
-      // Dummy response: single subscription
-      return {
-        data: {
-          id: 2,
-          user_id: 2,
-          tier: 'premium',
-          start_date: new Date().toISOString(),
+  .get('/', async () => {
+    // Dummy response: array of subscriptions
+    return {
+      data: [
+        {
           expiry_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-          payment_ref: 'dummy-payment-ref-2',
+          id: 1,
+          payment_ref: 'dummy-payment-ref',
+          start_date: new Date().toISOString(),
+          tier: 'free',
+          user_id: 1,
         },
-      }
+      ],
     }
-  )
+  })
+  // Get current user's subscription
+  .get('/me', async () => {
+    // Dummy response: single subscription
+    return {
+      data: {
+        expiry_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+        id: 2,
+        payment_ref: 'dummy-payment-ref-2',
+        start_date: new Date().toISOString(),
+        tier: 'premium',
+        user_id: 2,
+      },
+    }
+  })
   // Get subscription by user_id (admin)
   .get(
     '/:user_id',
@@ -50,16 +48,16 @@ const subscriptionsRoutes = new Elysia({ prefix: '/subscriptions' })
       // Dummy response: single subscription
       return {
         data: {
-          id: 3,
-          user_id: Number(params.user_id) || 3,
-          tier: 'vip',
-          start_date: new Date().toISOString(),
           expiry_date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+          id: 3,
           payment_ref: 'dummy-payment-ref-3',
+          start_date: new Date().toISOString(),
+          tier: 'vip',
+          user_id: Number(params.user_id) || 3,
         },
       }
     },
-    { params: v.object({ user_id: v.string() }) }
+    { params: v.object({ user_id: v.string() }) },
   )
   // Create new subscription (user or admin)
   .post(
@@ -73,7 +71,7 @@ const subscriptionsRoutes = new Elysia({ prefix: '/subscriptions' })
         },
       }
     },
-    { body: SubscriptionCreateSchema }
+    { body: SubscriptionCreateSchema },
   )
   // Update subscription (upgrade/downgrade/cancel)
   .patch(
@@ -87,7 +85,7 @@ const subscriptionsRoutes = new Elysia({ prefix: '/subscriptions' })
         },
       }
     },
-    { params: v.object({ id: v.string() }), body: SubscriptionUpdateSchema }
+    { body: SubscriptionUpdateSchema, params: v.object({ id: v.string() }) },
   )
   // Delete/cancel subscription (admin or user)
   .delete(
@@ -96,7 +94,7 @@ const subscriptionsRoutes = new Elysia({ prefix: '/subscriptions' })
       // Dummy response for deletion
       return { success: true }
     },
-    { params: v.object({ id: v.string() }) }
+    { params: v.object({ id: v.string() }) },
   )
 
 export default subscriptionsRoutes

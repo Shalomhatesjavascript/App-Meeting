@@ -1,8 +1,12 @@
+import { InterestCreateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { InterestCreateSchema } from '@repo/shared'
 
-const userInterestsRoutes = new Elysia({ prefix: '/user-interests' })
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
+
+const userInterestsRoutes = new Elysia({
+  prefix: getApiRoutePrefixUrl(ApiRoutePrefix['user-interests']),
+})
   // Get all interests for a user
   .get(
     '/:userId',
@@ -19,7 +23,7 @@ const userInterestsRoutes = new Elysia({ prefix: '/user-interests' })
         ],
       }
     },
-    { params: v.object({ userId: v.string() }) }
+    { params: v.object({ userId: v.string() }) },
   )
   // Add an interest to a user
   .post(
@@ -32,7 +36,7 @@ const userInterestsRoutes = new Elysia({ prefix: '/user-interests' })
         },
       }
     },
-    { body: InterestCreateSchema }
+    { body: InterestCreateSchema },
   )
   // Remove an interest from a user
   .delete(
@@ -41,7 +45,7 @@ const userInterestsRoutes = new Elysia({ prefix: '/user-interests' })
       // Dummy response for deletion
       return { success: true }
     },
-    { body: InterestCreateSchema }
+    { body: InterestCreateSchema },
   )
 
 export default userInterestsRoutes

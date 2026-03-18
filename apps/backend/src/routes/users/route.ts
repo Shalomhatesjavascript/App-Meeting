@@ -1,28 +1,23 @@
+import { UserAdminActionSchema, UserCreateSchema, UserUpdateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import {
-  UserCreateSchema,
-  UserUpdateSchema,
-  UserAdminActionSchema,
-} from '@repo/shared'
 
-const usersRoutes = new Elysia({ prefix: '/users' })
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
+
+const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.users) })
   // Get all users (admin only)
-  .get(
-    '/',
-    async () => {
-      // Dummy response: array of users
-      return {
-        data: [
-          {
-            email: 'admin@babcock.edu.ng',
-            password: 'password123',
-            role: 'admin',
-          },
-        ],
-      }
+  .get('/', async () => {
+    // Dummy response: array of users
+    return {
+      data: [
+        {
+          email: 'admin@babcock.edu.ng',
+          password: 'password123',
+          role: 'admin',
+        },
+      ],
     }
-  )
+  })
   // Get a single user by ID (admin or self)
   .get(
     '/:id',
@@ -36,7 +31,7 @@ const usersRoutes = new Elysia({ prefix: '/users' })
         },
       }
     },
-    { params: v.object({ id: v.string() }) }
+    { params: v.object({ id: v.string() }) },
   )
   // Update a user (admin or self)
   .patch(
@@ -49,7 +44,7 @@ const usersRoutes = new Elysia({ prefix: '/users' })
         },
       }
     },
-    { params: v.object({ id: v.string() }), body: UserUpdateSchema }
+    { body: UserUpdateSchema, params: v.object({ id: v.string() }) },
   )
   // Delete a user (admin only)
   .delete(
@@ -58,7 +53,7 @@ const usersRoutes = new Elysia({ prefix: '/users' })
       // Dummy response for deletion
       return { success: true }
     },
-    { params: v.object({ id: v.string() }) }
+    { params: v.object({ id: v.string() }) },
   )
   // Ban a user (admin only)
   .post(
@@ -71,7 +66,7 @@ const usersRoutes = new Elysia({ prefix: '/users' })
         },
       }
     },
-    { params: v.object({ id: v.string() }), body: UserAdminActionSchema }
+    { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
   )
   // Approve a user (admin only)
   .post(
@@ -84,7 +79,7 @@ const usersRoutes = new Elysia({ prefix: '/users' })
         },
       }
     },
-    { params: v.object({ id: v.string() }), body: UserAdminActionSchema }
+    { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
   )
   // Get user statistics (admin only)
   .get(
@@ -95,14 +90,14 @@ const usersRoutes = new Elysia({ prefix: '/users' })
         data: {
           id: Number(params.id) || 1,
           stats: {
-            posts: 0,
             likes: 0,
             matches: 0,
+            posts: 0,
           },
         },
       }
     },
-    { params: v.object({ id: v.string() }) }
+    { params: v.object({ id: v.string() }) },
   )
 
 export default usersRoutes

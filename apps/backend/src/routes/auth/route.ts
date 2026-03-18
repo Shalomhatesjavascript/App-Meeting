@@ -1,14 +1,15 @@
+import {
+  ForgotPasswordSchema,
+  LoginSchema,
+  RegisterSchema,
+  ResetPasswordSchema,
+  VerifySchema,
+} from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import {
-  RegisterSchema,
-  LoginSchema,
-  VerifySchema,
-  ForgotPasswordSchema,
-  ResetPasswordSchema,
-} from '@repo/shared'
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 
-const authRoutes = new Elysia({ prefix: '/auth' })
+const authRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.auth) })
   // User registration
   .post(
     '/register',
@@ -16,13 +17,13 @@ const authRoutes = new Elysia({ prefix: '/auth' })
       // Dummy response matching RegisterSchema output
       return {
         data: {
+          confirmPassword: body.confirmPassword ?? 'password123',
           email: body.email ?? 'dummy@student.babcock.edu.ng',
           password: body.password ?? 'password123',
-          confirmPassword: body.confirmPassword ?? 'password123',
         },
       }
     },
-    { body: RegisterSchema }
+    { body: RegisterSchema },
   )
   // User login
   .post(
@@ -36,16 +37,13 @@ const authRoutes = new Elysia({ prefix: '/auth' })
         },
       }
     },
-    { body: LoginSchema }
+    { body: LoginSchema },
   )
   // User logout
-  .post(
-    '/logout',
-    async ({ body }) => {
-      // Dummy response for logout (no schema, just acknowledge)
-      return { success: true }
-    }
-  )
+  .post('/logout', async ({ body }) => {
+    // Dummy response for logout (no schema, just acknowledge)
+    return { success: true }
+  })
   // Email verification
   .post(
     '/verify',
@@ -53,12 +51,12 @@ const authRoutes = new Elysia({ prefix: '/auth' })
       // Dummy response matching VerifySchema output
       return {
         data: {
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
           code: body.code ?? '1234',
+          email: body.email ?? 'dummy@student.babcock.edu.ng',
         },
       }
     },
-    { body: VerifySchema }
+    { body: VerifySchema },
   )
   // Forgot password
   .post(
@@ -71,7 +69,7 @@ const authRoutes = new Elysia({ prefix: '/auth' })
         },
       }
     },
-    { body: ForgotPasswordSchema }
+    { body: ForgotPasswordSchema },
   )
   // Reset password
   .post(
@@ -80,14 +78,14 @@ const authRoutes = new Elysia({ prefix: '/auth' })
       // Dummy response matching ResetPasswordSchema output
       return {
         data: {
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
           code: body.code ?? '1234',
-          newPassword: body.newPassword ?? 'password123',
           confirmPassword: body.confirmPassword ?? 'password123',
+          email: body.email ?? 'dummy@student.babcock.edu.ng',
+          newPassword: body.newPassword ?? 'password123',
         },
       }
     },
-    { body: ResetPasswordSchema }
+    { body: ResetPasswordSchema },
   )
 
 export default authRoutes

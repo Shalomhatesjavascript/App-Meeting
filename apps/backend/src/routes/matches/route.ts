@@ -1,23 +1,22 @@
+import { MatchCreateSchema, MatchIdSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { MatchCreateSchema, MatchIdSchema } from '@repo/shared'
 
-const matchesRoutes = new Elysia({ prefix: '/matches' })
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
+
+const matchesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.matches) })
   // Get all matches for the authenticated user
-  .get(
-    '/',
-    async () => {
-      // Dummy response: array of matches
-      return {
-        data: [
-          {
-            user1_id: 1,
-            user2_id: 2,
-          },
-        ],
-      }
+  .get('/', async () => {
+    // Dummy response: array of matches
+    return {
+      data: [
+        {
+          user1_id: 1,
+          user2_id: 2,
+        },
+      ],
     }
-  )
+  })
   // Get details for a specific match
   .get(
     '/:id',
@@ -29,7 +28,7 @@ const matchesRoutes = new Elysia({ prefix: '/matches' })
         },
       }
     },
-    { params: v.object({ id: v.string() }) }
+    { params: v.object({ id: v.string() }) },
   )
 
 export default matchesRoutes

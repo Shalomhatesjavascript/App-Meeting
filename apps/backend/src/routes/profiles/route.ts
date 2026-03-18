@@ -1,27 +1,25 @@
+import { ProfileCreateSchema, ProfileUpdateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { ProfileCreateSchema, ProfileUpdateSchema } from '@repo/shared'
+import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 
-const profilesRoutes = new Elysia({ prefix: '/profiles' })
+const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.profiles) })
   // Get current user's profile
-  .get(
-    '/me',
-    async () => {
-      // Dummy response matching ProfileCreateSchema output
-      return {
-        data: {
-          full_name: 'John Doe',
-          alias: 'johnd',
-          gender: 'male',
-          department: 'Computer Science',
-          level: 400,
-          bio: 'Sample bio',
-          intent: 'dating',
-          is_id_verified: 1,
-        },
-      }
+  .get('/me', async () => {
+    // Dummy response matching ProfileCreateSchema output
+    return {
+      data: {
+        alias: 'johnd',
+        bio: 'Sample bio',
+        department: 'Computer Science',
+        full_name: 'John Doe',
+        gender: 'male',
+        intent: 'dating',
+        is_id_verified: 1,
+        level: 400,
+      },
     }
-  )
+  })
   // Get profile by user_id
   .get(
     '/:user_id',
@@ -29,18 +27,18 @@ const profilesRoutes = new Elysia({ prefix: '/profiles' })
       // Dummy response matching ProfileCreateSchema output
       return {
         data: {
-          full_name: 'Jane Doe',
           alias: 'janed',
-          gender: 'female',
-          department: 'Accounting',
-          level: 300,
           bio: 'Another sample bio',
+          department: 'Accounting',
+          full_name: 'Jane Doe',
+          gender: 'female',
           intent: 'friendship',
           is_id_verified: 0,
+          level: 300,
         },
       }
     },
-    { params: v.object({ user_id: v.string() }) }
+    { params: v.object({ user_id: v.string() }) },
   )
   // Create profile
   .post(
@@ -53,7 +51,7 @@ const profilesRoutes = new Elysia({ prefix: '/profiles' })
         },
       }
     },
-    { body: ProfileCreateSchema }
+    { body: ProfileCreateSchema },
   )
   // Update profile by user_id
   .put(
@@ -66,7 +64,7 @@ const profilesRoutes = new Elysia({ prefix: '/profiles' })
         },
       }
     },
-    { params: v.object({ user_id: v.string() }), body: ProfileUpdateSchema }
+    { body: ProfileUpdateSchema, params: v.object({ user_id: v.string() }) },
   )
   // Delete profile by user_id
   .delete(
@@ -75,7 +73,7 @@ const profilesRoutes = new Elysia({ prefix: '/profiles' })
       // Dummy response for deletion
       return { success: true }
     },
-    { params: v.object({ user_id: v.string() }) }
+    { params: v.object({ user_id: v.string() }) },
   )
 
 export default profilesRoutes
