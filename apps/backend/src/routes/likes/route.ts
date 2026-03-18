@@ -1,28 +1,69 @@
 import { Elysia } from 'elysia'
+import * as v from 'valibot'
+import { LikeCreateSchema, LikeIdSchema } from '@repo/shared'
 
 const likesRoutes = new Elysia({ prefix: '/likes' })
   // Like or pass a user
-  .post('/', async ({ body }) => {
-    // TODO: Implement like/pass logic
-    // body: { from_user_id, to_user_id, is_like }
-    return { message: 'Like/pass action received', data: body }
-  })
+  .post(
+    '/',
+    async ({ body }) => {
+      // Dummy response matching LikeCreateSchema output
+      return {
+        data: {
+          from_user_id: body.from_user_id ?? 1,
+          to_user_id: body.to_user_id ?? 2,
+          is_like: body.is_like ?? true,
+        },
+      }
+    },
+    { body: LikeCreateSchema }
+  )
   // Get a like by ID
-  .get('/:id', async ({ params }) => {
-    // TODO: Fetch like by ID
-    return { message: `Fetching like with id ${params.id}` }
-  })
+  .get(
+    '/:id',
+    async ({ params }) => {
+      // Dummy response matching LikeIdSchema output
+      return {
+        data: {
+          id: Number(params.id) || 1,
+        },
+      }
+    },
+    { params: v.object({ id: v.string() }) }
+  )
   // Get all likes for the current user (optionally filter by sent/received)
-  .get('/', async ({ query }) => {
-    // TODO: Fetch likes for user
-    // query: { user_id, type: 'sent' | 'received' }
-    return { message: 'Fetching likes', query }
-  })
+  .get(
+    '/',
+    async ({ query }) => {
+      // Dummy response for likes list
+      return {
+        data: [
+          {
+            from_user_id: 1,
+            to_user_id: 2,
+            is_like: true,
+          },
+        ],
+        query,
+      }
+    }
+  )
   // Get mutual likes (matches) for the current user
-  .get('/mutual', async ({ query }) => {
-    // TODO: Fetch mutual likes (matches)
-    // query: { user_id }
-    return { message: 'Fetching mutual likes', query }
-  })
+  .get(
+    '/mutual',
+    async ({ query }) => {
+      // Dummy response for mutual likes
+      return {
+        data: [
+          {
+            from_user_id: 1,
+            to_user_id: 2,
+            is_like: true,
+          },
+        ],
+        query,
+      }
+    }
+  )
 
 export default likesRoutes
