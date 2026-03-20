@@ -1,0 +1,34 @@
+{
+  "name": "@repo/backend",
+  "version": "1.0.50",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "bun build --outdir=dist --minify-whitespace --minify-syntax --minify-identifiers src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome lint ./ --write",
+    "format": "biome format ./ --write",
+    "test": "bun test",
+    "gen:types": "wrangler types",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:push": "bunx drizzle-kit push",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:studio": "bunx drizzle-kit studio --port 3131"
+  },
+  "dependencies": {
+    "@repo/shared": "workspace:*",
+    "better-ts-enum": "^0.4.0",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.1",
+    "elysia": "latest",
+    "valibot": "^1.3.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.10",
+    "wrangler": "^4.75.0"
+  },
+  "module": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
