@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Elysia } from 'elysia'
+import * as v from 'valibot'
 
 type RequestUser = { id: number; role: 'free' | 'premium' | 'admin'; email?: string }
 
@@ -86,7 +87,9 @@ describe('Users Route Search', () => {
     }
 
     const res = await app.fetch(new Request('http://localhost/users/search?q=ada'))
-    const body = (await res.json()) as { error?: string }
+    const parsed = v.safeParse(v.object({ error: v.optional(v.string()) }), await res.json())
+    expect(parsed.success).toBe(true)
+    const body = parsed.output
 
     expect(res.status).toBe(401)
     expect(body.error).toContain('Authentication required')
@@ -98,7 +101,9 @@ describe('Users Route Search', () => {
         headers: { 'x-user-id': '1' },
       }),
     )
-    const body = (await res.json()) as { error?: string }
+    const parsed = v.safeParse(v.object({ error: v.optional(v.string()) }), await res.json())
+    expect(parsed.success).toBe(true)
+    const body = parsed.output
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('q is required')
@@ -132,7 +137,22 @@ describe('Users Route Search', () => {
         headers: { 'x-user-id': '3' },
       }),
     )
-    const body = (await res.json()) as { data?: SearchResult[] }
+    const SearchResultSchema = v.object({
+      alias: v.string(),
+      bio: v.nullable(v.string()),
+      department: v.string(),
+      email: v.string(),
+      gender: v.string(),
+      intent: v.string(),
+      level: v.number(),
+      userId: v.number(),
+    })
+    const parsed = v.safeParse(
+      v.object({ data: v.optional(v.array(SearchResultSchema)) }),
+      await res.json(),
+    )
+    expect(parsed.success).toBe(true)
+    const body = parsed.output
 
     expect(res.status).toBe(200)
     expect(body.data).toHaveLength(1)
