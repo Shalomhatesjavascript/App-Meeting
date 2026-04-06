@@ -1,4 +1,7 @@
 import type { AdminLogCreateInput, AdminLogUpdateInput } from '@repo/shared'
+import { and, eq, gte, like, lte } from 'drizzle-orm'
+import { adminLogsTable } from '../../db/schema'
+import { getDrizzleDb } from '../../db/utils'
 
 /**
  * AdminLogsModel
@@ -9,30 +12,74 @@ import type { AdminLogCreateInput, AdminLogUpdateInput } from '@repo/shared'
  * Create a new admin log entry.
  */
 export async function createAdminLog(data: AdminLogCreateInput) {
-  // TODO: Implement DB insert logic
-  return { id: 1, ...data }
+  const db = getDrizzleDb()
+  const [created] = await db
+    .insert(adminLogsTable)
+    .values({
+      action: data.action,
+      admin_id: data.admin_id,
+      target_user_id: data.target_user_id,
+      timestamp: data.timestamp ?? new Date().toISOString(),
+    })
+    .returning()
+
+  return created
 }
 
 /**
  * Update an admin log entry by id.
  */
 export async function updateAdminLog(id: number, data: AdminLogUpdateInput) {
-  // TODO: Implement DB update logic
-  return { id, ...data }
+  const db = getDrizzleDb()
+  const [updated] = await db
+    .update(adminLogsTable)
+    .set({
+      action: data.action,
+      admin_id: data.admin_id,
+      target_user_id: data.target_user_id,
+      timestamp: data.timestamp,
+    })
+    .where(eq(adminLogsTable.id, id))
+    .returning()
+
+  return updated
 }
 
 /**
  * Get an admin log entry by id.
  */
 export async function getAdminLogById(id: number) {
-  // TODO: Implement DB fetch logic
-  return { id }
+  const db = getDrizzleDb()
+  return db.select().from(adminLogsTable).where(eq(adminLogsTable.id, id)).get()
 }
 
 /**
  * List admin logs, optionally filtered.
  */
-export async function listAdminLogs(_filter?: Partial<AdminLogCreateInput>) {
-  // TODO: Implement DB query logic
-  return []
+export async function listAdminLogs(filter?: {
+  admin_id?: number
+  target_user_id?: number
+  action?: string
+  from?: string
+  to?: string
+}) {
+  const db = getDrizzleDb()
+
+  const conditions = [
+    filter?.admin_id ? eq(adminLogsTable.admin_id, filter.admin_id) : undefined,
+    filter?.target_user_id ? eq(adminLogsTable.target_user_id, filter.target_user_id) : undefined,
+    filter?.action ? like(adminLogsTable.action, `%${filter.action}%`) : undefined,
+    filter?.from ? gte(adminLogsTable.timestamp, filter.from) : undefined,
+    filter?.to ? lte(adminLogsTable.timestamp, filter.to) : undefined,
+  ].filter(Boolean)
+
+  if (conditions.length === 0) {
+    return db.select().from(adminLogsTable).all()
+  }
+
+  return db
+    .select()
+    .from(adminLogsTable)
+    .where(and(...conditions))
+    .all()
 }

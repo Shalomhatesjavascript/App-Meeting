@@ -1,25 +1,13 @@
 {
-  "name": "@repo/backend",
-  "version": "1.0.50",
-  "scripts": {
-    "dev": "wrangler dev",
-    "build": "bun build --outdir=dist --minify-whitespace --minify-syntax --minify-identifiers src/index.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome lint ./ --write",
-    "format": "biome format ./ --write",
-    "test": "bun test",
-    "gen:types": "wrangler types",
-    "db:generate": "bunx drizzle-kit generate",
-    "db:push": "bunx drizzle-kit push",
-    "db:migrate": "bunx drizzle-kit migrate",
-    "db:studio": "bunx drizzle-kit studio --port 3131"
-  },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.5.6",
     "@repo/shared": "workspace:*",
+    "better-auth": "^1.5.6",
     "better-ts-enum": "^0.4.0",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "elysia": "latest",
+    "neverthrow": "^8.2.0",
     "valibot": "^1.3.0"
   },
   "devDependencies": {
@@ -27,8 +15,23 @@
     "drizzle-kit": "^0.31.10",
     "wrangler": "^4.75.0"
   },
-  "module": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"
-  }
+  },
+  "module": "src/index.ts",
+  "name": "@repo/backend",
+  "scripts": {
+    "build": "bun build --outdir=dist --minify-whitespace --minify-syntax --minify-identifiers src/index.ts",
+    "db:generate": "bunx drizzle-kit generate",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:push": "bunx drizzle-kit push",
+    "db:studio": "bunx drizzle-kit studio --port 3131",
+    "dev": "wrangler dev",
+    "format": "biome format ./ --write",
+    "gen:types": "wrangler types",
+    "lint": "biome lint ./ --write",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "version": "1.0.50"
 }

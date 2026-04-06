@@ -33,16 +33,26 @@ export async function updateSubscription(db: DB, id: number, payload: Subscripti
     throw new Error(`Validation failed: ${JSON.stringify(result.issues)}`)
   }
 
+  const { id: _id, ...updatePayload } = result.output
+
   const [updated] = await db
     .update(subscriptionsTable)
-    .set(result.output)
+    .set(updatePayload)
     .where(eq(subscriptionsTable.id, id))
     .returning()
   return updated
 }
 
 export async function getSubscriptionByUserId(db: DB, user_id: number) {
-  return db.select().from(subscriptionsTable).where(eq(subscriptionsTable.user_id, user_id)).all()
+  return db.select().from(subscriptionsTable).where(eq(subscriptionsTable.user_id, user_id)).get()
+}
+
+export async function getSubscriptionById(db: DB, id: number) {
+  return db.select().from(subscriptionsTable).where(eq(subscriptionsTable.id, id)).get()
+}
+
+export async function listSubscriptions(db: DB) {
+  return db.select().from(subscriptionsTable).all()
 }
 
 export async function deleteSubscription(db: DB, id: number) {
