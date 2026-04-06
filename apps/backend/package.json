@@ -23,6 +23,8 @@
   "scripts": {
     "build": "bun build --outdir=dist --minify-whitespace --minify-syntax --minify-identifiers src/index.ts",
     "db:generate": "bunx drizzle-kit generate",
+    "db:local:reset": "rm -rf .wrangler/state/v3/d1 && bunx wrangler d1 migrations apply social-media-babcock-test-db --local && bunx wrangler d1 execute social-media-babcock-test-db --local --file scripts/seed.sql",
+    "db:local:seed": "bunx wrangler d1 execute social-media-babcock-test-db --local --file scripts/seed.sql",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:push": "bunx drizzle-kit push",
     "db:studio": "bunx drizzle-kit studio --port 3131",

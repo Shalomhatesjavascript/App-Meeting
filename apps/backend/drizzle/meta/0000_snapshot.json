@@ -1,0 +1,586 @@
+{
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "dialect": "sqlite",
+  "enums": {},
+  "id": "4b164291-2615-4c92-9009-2cf0ccf9cb16",
+  "internal": {
+    "indexes": {}
+  },
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "admin_logs": {
+      "checkConstraints": {},
+      "columns": {
+        "action": {
+          "autoincrement": false,
+          "name": "action",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(255)"
+        },
+        "admin_id": {
+          "autoincrement": false,
+          "name": "admin_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "target_user_id": {
+          "autoincrement": false,
+          "name": "target_user_id",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "timestamp": {
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'",
+          "name": "timestamp",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "admin_logs_admin_id_users_id_fk": {
+          "columnsFrom": ["admin_id"],
+          "columnsTo": ["id"],
+          "name": "admin_logs_admin_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "admin_logs",
+          "tableTo": "users"
+        },
+        "admin_logs_target_user_id_users_id_fk": {
+          "columnsFrom": ["target_user_id"],
+          "columnsTo": ["id"],
+          "name": "admin_logs_target_user_id_users_id_fk",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "tableFrom": "admin_logs",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "admin_logs",
+      "uniqueConstraints": {}
+    },
+    "interests": {
+      "checkConstraints": {},
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(50)"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {},
+      "indexes": {
+        "interests_name_unique": {
+          "columns": ["name"],
+          "isUnique": true,
+          "name": "interests_name_unique"
+        }
+      },
+      "name": "interests",
+      "uniqueConstraints": {}
+    },
+    "likes": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'",
+          "name": "created_at",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "from_user_id": {
+          "autoincrement": false,
+          "name": "from_user_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "is_like": {
+          "autoincrement": false,
+          "name": "is_like",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "to_user_id": {
+          "autoincrement": false,
+          "name": "to_user_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "likes_from_user_id_users_id_fk": {
+          "columnsFrom": ["from_user_id"],
+          "columnsTo": ["id"],
+          "name": "likes_from_user_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "likes",
+          "tableTo": "users"
+        },
+        "likes_to_user_id_users_id_fk": {
+          "columnsFrom": ["to_user_id"],
+          "columnsTo": ["id"],
+          "name": "likes_to_user_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "likes",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "likes",
+      "uniqueConstraints": {}
+    },
+    "matches": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'",
+          "name": "created_at",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "user1_id": {
+          "autoincrement": false,
+          "name": "user1_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "user2_id": {
+          "autoincrement": false,
+          "name": "user2_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "matches_user1_id_users_id_fk": {
+          "columnsFrom": ["user1_id"],
+          "columnsTo": ["id"],
+          "name": "matches_user1_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "matches",
+          "tableTo": "users"
+        },
+        "matches_user2_id_users_id_fk": {
+          "columnsFrom": ["user2_id"],
+          "columnsTo": ["id"],
+          "name": "matches_user2_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "matches",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "matches",
+      "uniqueConstraints": {}
+    },
+    "messages": {
+      "checkConstraints": {},
+      "columns": {
+        "content": {
+          "autoincrement": false,
+          "name": "content",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "created_at": {
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'",
+          "name": "created_at",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "is_read": {
+          "autoincrement": false,
+          "default": 0,
+          "name": "is_read",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "match_id": {
+          "autoincrement": false,
+          "name": "match_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "sender_id": {
+          "autoincrement": false,
+          "name": "sender_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "messages_match_id_matches_id_fk": {
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
+          "name": "messages_match_id_matches_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "messages",
+          "tableTo": "matches"
+        },
+        "messages_sender_id_users_id_fk": {
+          "columnsFrom": ["sender_id"],
+          "columnsTo": ["id"],
+          "name": "messages_sender_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "messages",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "messages",
+      "uniqueConstraints": {}
+    },
+    "profiles": {
+      "checkConstraints": {},
+      "columns": {
+        "alias": {
+          "autoincrement": false,
+          "name": "alias",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(50)"
+        },
+        "bio": {
+          "autoincrement": false,
+          "name": "bio",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "department": {
+          "autoincrement": false,
+          "name": "department",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(100)"
+        },
+        "full_name": {
+          "autoincrement": false,
+          "name": "full_name",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(100)"
+        },
+        "gender": {
+          "autoincrement": false,
+          "name": "gender",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(20)"
+        },
+        "intent": {
+          "autoincrement": false,
+          "name": "intent",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "is_id_verified": {
+          "autoincrement": false,
+          "default": 0,
+          "name": "is_id_verified",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "level": {
+          "autoincrement": false,
+          "name": "level",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "user_id": {
+          "autoincrement": false,
+          "name": "user_id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "profiles_user_id_users_id_fk": {
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "name": "profiles_user_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "profiles",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "profiles",
+      "uniqueConstraints": {}
+    },
+    "subscriptions": {
+      "checkConstraints": {},
+      "columns": {
+        "expiry_date": {
+          "autoincrement": false,
+          "name": "expiry_date",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "payment_ref": {
+          "autoincrement": false,
+          "name": "payment_ref",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(100)"
+        },
+        "start_date": {
+          "autoincrement": false,
+          "name": "start_date",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "tier": {
+          "autoincrement": false,
+          "name": "tier",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "user_id": {
+          "autoincrement": false,
+          "name": "user_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {
+        "subscriptions_user_id_users_id_fk": {
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "name": "subscriptions_user_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "subscriptions",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "subscriptions",
+      "uniqueConstraints": {}
+    },
+    "user_interests": {
+      "checkConstraints": {},
+      "columns": {
+        "interest_id": {
+          "autoincrement": false,
+          "name": "interest_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "user_id": {
+          "autoincrement": false,
+          "name": "user_id",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_interests_user_id_interest_id_pk": {
+          "columns": ["user_id", "interest_id"],
+          "name": "user_interests_user_id_interest_id_pk"
+        }
+      },
+      "foreignKeys": {
+        "user_interests_interest_id_interests_id_fk": {
+          "columnsFrom": ["interest_id"],
+          "columnsTo": ["id"],
+          "name": "user_interests_interest_id_interests_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "user_interests",
+          "tableTo": "interests"
+        },
+        "user_interests_user_id_users_id_fk": {
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "name": "user_interests_user_id_users_id_fk",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "tableFrom": "user_interests",
+          "tableTo": "users"
+        }
+      },
+      "indexes": {},
+      "name": "user_interests",
+      "uniqueConstraints": {}
+    },
+    "users": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'",
+          "name": "created_at",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "email": {
+          "autoincrement": false,
+          "name": "email",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text(255)"
+        },
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "notNull": true,
+          "primaryKey": true,
+          "type": "integer"
+        },
+        "is_approved": {
+          "autoincrement": false,
+          "default": 0,
+          "name": "is_approved",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "is_banned": {
+          "autoincrement": false,
+          "default": 0,
+          "name": "is_banned",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "is_verified": {
+          "autoincrement": false,
+          "default": 0,
+          "name": "is_verified",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "integer"
+        },
+        "last_login_at": {
+          "autoincrement": false,
+          "name": "last_login_at",
+          "notNull": false,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "password_hash": {
+          "autoincrement": false,
+          "name": "password_hash",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        },
+        "role": {
+          "autoincrement": false,
+          "name": "role",
+          "notNull": true,
+          "primaryKey": false,
+          "type": "text"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "foreignKeys": {},
+      "indexes": {
+        "users_email_unique": {
+          "columns": ["email"],
+          "isUnique": true,
+          "name": "users_email_unique"
+        }
+      },
+      "name": "users",
+      "uniqueConstraints": {}
+    }
+  },
+  "version": "6",
+  "views": {}
+}
