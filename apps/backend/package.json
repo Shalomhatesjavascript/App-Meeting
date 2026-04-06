@@ -32,6 +32,7 @@
     "format": "biome format ./ --write",
     "gen:types": "wrangler types",
     "lint": "biome lint ./ --write",
+    "onboard": "bun run db:local:reset",
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
