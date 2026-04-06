@@ -6,84 +6,104 @@ import {
   VerifySchema,
 } from '@repo/shared'
 import { Elysia } from 'elysia'
-import * as v from 'valibot'
+import { type AuthErrorCode, AuthErrorCodeEnum } from '../../lib/auth-enums'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
+import { AuthModel } from './model'
+
+function statusFromCode(code: AuthErrorCode): number {
+  switch (code) {
+    case AuthErrorCodeEnum.AUTHENTICATION_REQUIRED:
+      return 401
+    case AuthErrorCodeEnum.FORBIDDEN:
+      return 403
+    case AuthErrorCodeEnum.NOT_FOUND:
+      return 404
+    case AuthErrorCodeEnum.CONFLICT:
+      return 409
+    case AuthErrorCodeEnum.VALIDATION_ERROR:
+      return 400
+    default:
+      return 500
+  }
+}
 
 const authRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.auth) })
   // User registration
   .post(
     '/register',
-    async ({ body }) => {
-      // Dummy response matching RegisterSchema output
-      return {
-        data: {
-          confirmPassword: body.confirmPassword ?? 'password123',
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
-          password: body.password ?? 'password123',
-        },
+    async ({ body, status }) => {
+      const result = await AuthModel.register(body)
+      if (result.isErr()) {
+        return status(statusFromCode(result.error.code), {
+          code: result.error.code,
+          error: result.error.message,
+        })
       }
+      return { data: result.value }
     },
     { body: RegisterSchema },
   )
   // User login
   .post(
     '/login',
-    async ({ body }) => {
-      // Dummy response matching LoginSchema output
-      return {
-        data: {
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
-          password: body.password ?? 'password123',
-        },
+    async ({ body, status }) => {
+      const result = await AuthModel.login(body)
+      if (result.isErr()) {
+        return status(statusFromCode(result.error.code), {
+          code: result.error.code,
+          error: result.error.message,
+        })
       }
+      return { data: result.value }
     },
     { body: LoginSchema },
   )
   // User logout
-  .post('/logout', async ({ body }) => {
-    // Dummy response for logout (no schema, just acknowledge)
+  .post('/logout', async () => {
     return { success: true }
   })
   // Email verification
   .post(
     '/verify',
-    async ({ body }) => {
-      // Dummy response matching VerifySchema output
-      return {
-        data: {
-          code: body.code ?? '1234',
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
-        },
+    async ({ body, status }) => {
+      const result = await AuthModel.verify(body)
+      if (result.isErr()) {
+        return status(statusFromCode(result.error.code), {
+          code: result.error.code,
+          error: result.error.message,
+        })
       }
+      return { data: result.value }
     },
     { body: VerifySchema },
   )
   // Forgot password
   .post(
     '/forgot-password',
-    async ({ body }) => {
-      // Dummy response matching ForgotPasswordSchema output
-      return {
-        data: {
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
-        },
+    async ({ body, status }) => {
+      const result = await AuthModel.forgotPassword(body)
+      if (result.isErr()) {
+        return status(statusFromCode(result.error.code), {
+          code: result.error.code,
+          error: result.error.message,
+        })
       }
+      return { data: result.value }
     },
     { body: ForgotPasswordSchema },
   )
   // Reset password
   .post(
     '/reset-password',
-    async ({ body }) => {
-      // Dummy response matching ResetPasswordSchema output
-      return {
-        data: {
-          code: body.code ?? '1234',
-          confirmPassword: body.confirmPassword ?? 'password123',
-          email: body.email ?? 'dummy@student.babcock.edu.ng',
-          newPassword: body.newPassword ?? 'password123',
-        },
+    async ({ body, status }) => {
+      const result = await AuthModel.resetPassword(body)
+      if (result.isErr()) {
+        return status(statusFromCode(result.error.code), {
+          code: result.error.code,
+          error: result.error.message,
+        })
       }
+      return { data: result.value }
     },
     { body: ResetPasswordSchema },
   )
