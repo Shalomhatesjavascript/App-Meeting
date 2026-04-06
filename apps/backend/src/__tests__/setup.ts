@@ -157,6 +157,5 @@ export async function cleanupTestDb(db: TestDB): Promise<void> {
  * ```
  */
 export function asProductionDB(db: TestDB) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return db as any
+  return db as unknown as import('../db/utils').DB
 }
