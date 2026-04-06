@@ -4,6 +4,7 @@ import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
 import { requireAdmin, requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import {
   createSubscription,
@@ -25,8 +26,8 @@ const subscriptionsRoutes = new Elysia({
       const subscriptions = await listSubscriptions(db)
       return { data: subscriptions }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list subscriptions'
-      return status(message.includes('Admin') ? 403 : 400, { error: message })
+      const routeError = toRouteError(error, 'Failed to list subscriptions')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get current user's subscription
@@ -40,8 +41,8 @@ const subscriptionsRoutes = new Elysia({
       }
       return { data: subscription }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch subscription'
-      return status(401, { error: message })
+      const routeError = toRouteError(error, 'Failed to fetch subscription')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get subscription by user_id (admin)
@@ -64,8 +65,8 @@ const subscriptionsRoutes = new Elysia({
           data: subscription,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch subscription'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch subscription')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ user_id: v.string() }) },
@@ -86,8 +87,8 @@ const subscriptionsRoutes = new Elysia({
           data: created,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create subscription'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create subscription')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: SubscriptionCreateSchema },
@@ -117,8 +118,8 @@ const subscriptionsRoutes = new Elysia({
           data: updated,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update subscription'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to update subscription')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: SubscriptionUpdateSchema, params: v.object({ id: v.string() }) },
@@ -146,8 +147,8 @@ const subscriptionsRoutes = new Elysia({
         await deleteSubscription(db, id)
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete subscription'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to delete subscription')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },

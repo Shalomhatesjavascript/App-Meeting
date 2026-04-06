@@ -3,6 +3,7 @@ import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
 import { requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { addUserInterest, getUserInterestsWithNames, removeUserInterest } from './model'
 
@@ -18,14 +19,19 @@ const userInterestsRoutes = new Elysia({
   .get(
     '/:userId',
     async ({ params, status }) => {
-      const userId = Number(params.userId)
-      if (!Number.isFinite(userId)) {
-        return status(400, { error: 'Invalid user id' })
-      }
-      const db = getDrizzleDb()
-      const interests = await getUserInterestsWithNames(db, userId)
-      return {
-        data: interests,
+      try {
+        const userId = Number(params.userId)
+        if (!Number.isFinite(userId)) {
+          return status(400, { error: 'Invalid user id' })
+        }
+        const db = getDrizzleDb()
+        const interests = await getUserInterestsWithNames(db, userId)
+        return {
+          data: interests,
+        }
+      } catch (error) {
+        const routeError = toRouteError(error, 'Failed to list user interests')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ userId: v.string() }) },
@@ -45,8 +51,8 @@ const userInterestsRoutes = new Elysia({
           data: body,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to add interest'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to add interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserInterestBodySchema },
@@ -64,8 +70,8 @@ const userInterestsRoutes = new Elysia({
         await removeUserInterest(db, body.user_id, body.interest_id)
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to remove interest'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to remove interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserInterestBodySchema },

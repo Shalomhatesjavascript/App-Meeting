@@ -3,6 +3,7 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 
 import { requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { createMatch, getMatchById, listMatchesForUser } from './model'
 
@@ -19,8 +20,8 @@ const matchesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.m
         const created = await createMatch(body)
         return { data: created }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create match'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create match')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: MatchCreateSchema },
@@ -34,8 +35,8 @@ const matchesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.m
         data: matches,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list matches'
-      return status(401, { error: message })
+      const routeError = toRouteError(error, 'Failed to list matches')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get details for a specific match
@@ -66,8 +67,8 @@ const matchesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.m
           data: match,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch match'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch match')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },

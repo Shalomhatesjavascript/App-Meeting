@@ -3,6 +3,7 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
 import { requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { createLike, getLikeById, getLikesForUser, getMutualLikes } from './model'
 
@@ -23,8 +24,8 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
           data: result,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create like'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create like')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: LikeCreateSchema },
@@ -46,8 +47,8 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
         data: likes,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get mutual likes'
-      return status(400, { error: message })
+      const routeError = toRouteError(error, 'Failed to get mutual likes')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get a like by ID
@@ -69,8 +70,8 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
           data: like,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch like'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch like')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },
@@ -95,8 +96,8 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
         data: likes,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list likes'
-      return status(400, { error: message })
+      const routeError = toRouteError(error, 'Failed to list likes')
+      return status(routeError.status, routeError.body)
     }
   })
 

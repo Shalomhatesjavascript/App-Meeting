@@ -1,4 +1,8 @@
+import { eq } from 'drizzle-orm'
 import * as v from 'valibot'
+
+import { usersTable } from '../db/schema'
+import { getDrizzleDb } from '../db/utils'
 
 import { type AuthRole, AuthRoleEnum, AuthRoleSchema } from './auth-enums'
 import { verifyAuthToken } from './auth-token'
@@ -40,12 +44,42 @@ export async function getRequestUser(
 
   const idValue = headers['x-user-id']
   if (!idValue) {
-    return null
+    const emailValue = headers['x-user-email']
+    if (!emailValue) {
+      return null
+    }
+
+    const db = getDrizzleDb()
+    const user = await db.select().from(usersTable).where(eq(usersTable.email, emailValue)).get()
+    if (!user) {
+      return null
+    }
+
+    return {
+      email: user.email,
+      id: user.id,
+      role: user.role === 'admin' || user.role === 'premium' ? user.role : AuthRoleEnum.free,
+    }
   }
 
   const id = Number(idValue)
   if (!Number.isFinite(id)) {
-    return null
+    const emailValue = headers['x-user-email']
+    if (!emailValue) {
+      return null
+    }
+
+    const db = getDrizzleDb()
+    const user = await db.select().from(usersTable).where(eq(usersTable.email, emailValue)).get()
+    if (!user) {
+      return null
+    }
+
+    return {
+      email: user.email,
+      id: user.id,
+      role: user.role === 'admin' || user.role === 'premium' ? user.role : AuthRoleEnum.free,
+    }
   }
 
   const roleHeader = headers['x-user-role']

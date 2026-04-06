@@ -11,6 +11,7 @@ export const ApiRoutePrefix = BasicEnumBuilder.new({ valueType: 'key' })
   .$('messages')
   .$('matches')
   .$('profiles')
+  .$('discovery')
   .build()
 export type ApiRoutePrefix = typeof ApiRoutePrefix.$.infer.values
 

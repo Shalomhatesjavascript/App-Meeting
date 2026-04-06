@@ -2,6 +2,7 @@ import { AdminLogCreateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { requireAdmin } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { createAdminLog, getAdminLogById, listAdminLogs } from './model'
 
@@ -21,8 +22,8 @@ const adminLogsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
         data: logs,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list logs'
-      return status(message.includes('Admin') ? 403 : 400, { error: message })
+      const routeError = toRouteError(error, 'Failed to list logs')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get a specific admin log by ID
@@ -43,8 +44,8 @@ const adminLogsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
           data: log,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch log'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch log')
+        return status(routeError.status, routeError.body)
       }
     },
     {
@@ -62,8 +63,8 @@ const adminLogsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
           data: created,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create log'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create log')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: AdminLogCreateSchema },

@@ -2,6 +2,7 @@ import { MessageCreateSchema, MessageQuerySchema, MessageReadSchema } from '@rep
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import {
   canReadMatchMessages,
@@ -40,8 +41,8 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         const messages = await getMessagesForMatch(parsed.output)
         return { data: messages }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch messages'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch messages')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ match_id: v.string() }) },
@@ -59,8 +60,8 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         const message = await createMessage(body)
         return { data: message }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to send message'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to send message')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: MessageCreateSchema },
@@ -78,8 +79,8 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         const updated = await markMessageAsRead(parsed.output)
         return { data: updated }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update message'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to update message')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },

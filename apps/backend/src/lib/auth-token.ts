@@ -1,8 +1,7 @@
 import { signJWT, verifyJWT } from 'better-auth/crypto'
-import { env } from 'elysia'
 import * as v from 'valibot'
-
 import { type AuthRole, AuthRoleSchema } from './auth-enums'
+import { getRuntimeString } from './runtime-env'
 
 export type AuthTokenPayload = {
   userId: number
@@ -17,7 +16,12 @@ export const AuthTokenPayloadSchema = v.object({
 })
 
 export function getAuthSecret(): string {
-  return env.BETTER_AUTH_SECRET || env.AUTH_SECRET || env.JWT_SECRET || 'dev-secret-change-me'
+  return (
+    getRuntimeString('BETTER_AUTH_SECRET') ||
+    getRuntimeString('AUTH_SECRET') ||
+    getRuntimeString('JWT_SECRET') ||
+    'dev-secret-change-me'
+  )
 }
 
 export async function createAuthToken(payload: AuthTokenPayload): Promise<string> {

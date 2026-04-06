@@ -3,6 +3,7 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
 import { requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { createProfile, deleteProfile, getProfileByUserId, updateProfile } from './model'
 
@@ -18,25 +19,30 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
       }
       return { data: profile }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get profile'
-      return status(401, { error: message })
+      const routeError = toRouteError(error, 'Failed to get profile')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get profile by user_id
   .get(
     '/:user_id',
     async ({ params, status }) => {
-      const user_id = Number(params.user_id)
-      if (!Number.isFinite(user_id)) {
-        return status(400, { error: 'Invalid user id' })
-      }
+      try {
+        const user_id = Number(params.user_id)
+        if (!Number.isFinite(user_id)) {
+          return status(400, { error: 'Invalid user id' })
+        }
 
-      const db = getDrizzleDb()
-      const profile = await getProfileByUserId(db, user_id)
-      if (!profile) {
-        return status(404, { error: 'Profile not found' })
+        const db = getDrizzleDb()
+        const profile = await getProfileByUserId(db, user_id)
+        if (!profile) {
+          return status(404, { error: 'Profile not found' })
+        }
+        return { data: profile }
+      } catch (error) {
+        const routeError = toRouteError(error, 'Failed to fetch profile')
+        return status(routeError.status, routeError.body)
       }
-      return { data: profile }
     },
     { params: v.object({ user_id: v.string() }) },
   )
@@ -50,8 +56,8 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         const created = await createProfile(db, requester.id, body)
         return { data: created }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create profile'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create profile')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: ProfileCreateSchema },
@@ -76,8 +82,8 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         }
         return { data: updated }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update profile'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to update profile')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: ProfileUpdateSchema, params: v.object({ user_id: v.string() }) },
@@ -99,8 +105,8 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
         await deleteProfile(db, user_id)
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete profile'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to delete profile')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ user_id: v.string() }) },

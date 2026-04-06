@@ -4,6 +4,7 @@ import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
 import { requireAdmin } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import {
   createInterest,
@@ -15,30 +16,40 @@ import {
 
 const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.interests) })
   // Get all interests
-  .get('/', async () => {
-    const db = getDrizzleDb()
-    const interests = await getAllInterests(db)
-    return {
-      data: interests,
+  .get('/', async ({ status }) => {
+    try {
+      const db = getDrizzleDb()
+      const interests = await getAllInterests(db)
+      return {
+        data: interests,
+      }
+    } catch (error) {
+      const routeError = toRouteError(error, 'Failed to list interests')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get a specific interest by id
   .get(
     '/:id',
     async ({ params, status }) => {
-      const id = Number(params.id)
-      if (!Number.isFinite(id)) {
-        return status(400, { error: 'Invalid interest id' })
-      }
+      try {
+        const id = Number(params.id)
+        if (!Number.isFinite(id)) {
+          return status(400, { error: 'Invalid interest id' })
+        }
 
-      const db = getDrizzleDb()
-      const interest = await getInterestById(db, id)
-      if (!interest) {
-        return status(404, { error: 'Interest not found' })
-      }
+        const db = getDrizzleDb()
+        const interest = await getInterestById(db, id)
+        if (!interest) {
+          return status(404, { error: 'Interest not found' })
+        }
 
-      return {
-        data: interest,
+        return {
+          data: interest,
+        }
+      } catch (error) {
+        const routeError = toRouteError(error, 'Failed to fetch interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },
@@ -55,8 +66,8 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
           data: created,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create interest'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: InterestCreateSchema },
@@ -80,8 +91,8 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
           data: updated,
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update interest'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to update interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: InterestUpdateSchema, params: v.object({ id: v.string() }) },
@@ -100,8 +111,8 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
         await deleteInterest(db, id)
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete interest'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to delete interest')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },
