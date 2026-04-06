@@ -1,6 +1,6 @@
 import type { UserAdminActionInput, UserCreateInput, UserUpdateInput } from '@repo/shared'
-import { and, eq, or } from 'drizzle-orm'
-import { likesTable, matchesTable, messagesTable, usersTable } from '../../db/schema'
+import { and, eq, like, ne, or } from 'drizzle-orm'
+import { likesTable, matchesTable, messagesTable, profilesTable, usersTable } from '../../db/schema'
 import type { DB } from '../../db/utils'
 
 async function hashPassword(value: string): Promise<string> {
@@ -72,6 +72,52 @@ export async function getUserById(db: DB, id: number) {
  */
 export async function listUsers(db: DB) {
   return db.select().from(usersTable).all()
+}
+
+export async function searchUsers(
+  db: DB,
+  requesterId: number,
+  query: string,
+  limit = 20,
+  offset = 0,
+) {
+  const term = query.trim()
+  if (!term) {
+    return []
+  }
+
+  const likeTerm = `%${term}%`
+
+  return db
+    .select({
+      alias: profilesTable.alias,
+      bio: profilesTable.bio,
+      department: profilesTable.department,
+      email: usersTable.email,
+      gender: profilesTable.gender,
+      intent: profilesTable.intent,
+      level: profilesTable.level,
+      userId: usersTable.id,
+    })
+    .from(usersTable)
+    .innerJoin(profilesTable, eq(profilesTable.user_id, usersTable.id))
+    .where(
+      and(
+        eq(usersTable.is_verified, 1),
+        eq(usersTable.is_approved, 1),
+        eq(usersTable.is_banned, 0),
+        ne(usersTable.id, requesterId),
+        or(
+          like(usersTable.email, likeTerm),
+          like(profilesTable.alias, likeTerm),
+          like(profilesTable.full_name, likeTerm),
+          like(profilesTable.department, likeTerm),
+        ),
+      ),
+    )
+    .limit(limit)
+    .offset(offset)
+    .all()
 }
 
 /**

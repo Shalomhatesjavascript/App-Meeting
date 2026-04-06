@@ -1,8 +1,14 @@
-import { UserAdminActionSchema, UserCreateSchema, UserUpdateSchema } from '@repo/shared'
+import {
+  UserAdminActionSchema,
+  UserCreateSchema,
+  UserSearchQuerySchema,
+  UserUpdateSchema,
+} from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
 import { requireAdmin, requireUser } from '../../lib/request-auth'
+import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import {
   adminActionUser,
@@ -11,6 +17,7 @@ import {
   getUserById,
   getUserStats,
   listUsers,
+  searchUsers,
   updateUser,
 } from './model'
 
@@ -25,8 +32,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
         const user = await createUser(db, body)
         return { data: user }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create user'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to create user')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserCreateSchema },
@@ -62,8 +69,42 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
         })),
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list users'
-      return status(401, { error: message })
+      const routeError = toRouteError(error, 'Failed to list users')
+      return status(routeError.status, routeError.body)
+    }
+  })
+  // Search users by email, alias, full name, or department
+  .get('/search', async ({ headers, query, status }) => {
+    try {
+      const requester = await requireUser(headers)
+      const db = getDrizzleDb()
+
+      const limitNum = query?.limit ? Number(query.limit) : undefined
+      const offsetNum = query?.offset ? Number(query.offset) : undefined
+
+      const parsed = v.safeParse(UserSearchQuerySchema, {
+        limit: Number.isFinite(limitNum) ? limitNum : undefined,
+        offset: Number.isFinite(offsetNum) ? offsetNum : undefined,
+        q: query?.q,
+      })
+
+      if (!parsed.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+
+      // Require q to be provided and non-empty after trimming
+      if (!parsed.output.q) {
+        return status(400, { error: 'q is required' })
+      }
+
+      const limit = Math.min(parsed.output.limit ?? 20, 100)
+      const offset = Math.max(parsed.output.offset ?? 0, 0)
+
+      const users = await searchUsers(db, requester.id, parsed.output.q, limit, offset)
+      return { data: users }
+    } catch (error) {
+      const routeError = toRouteError(error, 'Failed to search users')
+      return status(routeError.status, routeError.body)
     }
   })
   // Get a single user by ID (admin or self)
@@ -91,8 +132,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
           },
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch user'
-        return status(401, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch user')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },
@@ -122,8 +163,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
           },
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update user'
-        return status(400, { error: message })
+        const routeError = toRouteError(error, 'Failed to update user')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserUpdateSchema, params: v.object({ id: v.string() }) },
@@ -142,8 +183,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
         await deleteUser(db, id)
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete user'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to delete user')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },
@@ -168,8 +209,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
           },
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to ban user'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to ban user')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
@@ -194,8 +235,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
           },
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to approve user'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to approve user')
+        return status(routeError.status, routeError.body)
       }
     },
     { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
@@ -219,8 +260,8 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
           },
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch stats'
-        return status(message.includes('Admin') ? 403 : 400, { error: message })
+        const routeError = toRouteError(error, 'Failed to fetch stats')
+        return status(routeError.status, routeError.body)
       }
     },
     { params: v.object({ id: v.string() }) },

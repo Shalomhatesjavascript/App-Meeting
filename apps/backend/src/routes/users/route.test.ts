@@ -1,0 +1,148 @@
+import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { Elysia } from 'elysia'
+
+type RequestUser = { id: number; role: 'free' | 'premium' | 'admin'; email?: string }
+
+type SearchResult = {
+  userId: number
+  email: string
+  alias: string
+  bio: string | null
+  department: string
+  gender: string
+  intent: string
+  level: number
+}
+
+let requireUserImpl: (headers: Record<string, string | undefined>) => Promise<RequestUser> =
+  async () => ({
+    id: 1,
+    role: 'free',
+  })
+let searchUsersImpl: (...args: unknown[]) => Promise<SearchResult[]> = async () => []
+
+const testDb = { test: true }
+
+mock.module('../../lib/request-auth', () => ({
+  requireAdmin: async () => ({ id: 999, role: 'admin' as const }),
+  requireUser: (headers: Record<string, string | undefined>) => requireUserImpl(headers),
+}))
+
+mock.module('../../db/utils', () => ({
+  getDrizzleDb: () => testDb,
+}))
+
+mock.module('./model', async () => {
+  return {
+    adminActionUser: async () => ({
+      email: 'admin-action@student.babcock.edu.ng',
+      id: 1,
+      is_approved: 1,
+      is_banned: 0,
+      is_verified: 1,
+      last_login_at: null,
+      password_hash: 'hash',
+      role: 'free',
+    }),
+    createUser: async () => ({
+      email: 'created@student.babcock.edu.ng',
+      id: 1,
+      is_approved: 1,
+      is_banned: 0,
+      is_verified: 0,
+      last_login_at: null,
+      password_hash: 'hash',
+      role: 'free',
+    }),
+    deleteUser: async () => ({ success: true }),
+    getUserById: async () => null,
+    getUserStats: async () => ({ likesGiven: 0, likesReceived: 0, matches: 0, messagesSent: 0 }),
+    listUsers: async () => [],
+    searchUsers: (...args: unknown[]) => searchUsersImpl(...args),
+    updateUser: async () => null,
+  }
+})
+
+describe('Users Route Search', () => {
+  let app: Awaited<ReturnType<typeof buildApp>>
+
+  async function buildApp() {
+    const { default: usersRoutes } = await import('./route')
+    return new Elysia().use(usersRoutes)
+  }
+
+  beforeAll(async () => {
+    app = await buildApp()
+  })
+
+  beforeEach(() => {
+    requireUserImpl = async () => ({ id: 1, role: 'free' })
+    searchUsersImpl = async () => []
+  })
+
+  it('requires authentication', async () => {
+    requireUserImpl = async () => {
+      throw new Error('Authentication required')
+    }
+
+    const res = await app.fetch(new Request('http://localhost/users/search?q=ada'))
+    const body = (await res.json()) as { error?: string }
+
+    expect(res.status).toBe(401)
+    expect(body.error).toContain('Authentication required')
+  })
+
+  it('requires q query parameter', async () => {
+    const res = await app.fetch(
+      new Request('http://localhost/users/search', {
+        headers: { 'x-user-id': '1' },
+      }),
+    )
+    const body = (await res.json()) as { error?: string }
+
+    expect(res.status).toBe(400)
+    expect(body.error).toBe('q is required')
+  })
+
+  it('forwards query, limit, offset, and returns data', async () => {
+    requireUserImpl = async (headers) => ({
+      id: Number(headers['x-user-id'] || 1),
+      role: 'free',
+    })
+
+    const calls: unknown[][] = []
+    searchUsersImpl = async (...args: unknown[]) => {
+      calls.push(args)
+      return [
+        {
+          alias: 'Ada',
+          bio: 'Love coding',
+          department: 'Computer Science',
+          email: 'ada@student.babcock.edu.ng',
+          gender: 'female',
+          intent: 'dating',
+          level: 300,
+          userId: 22,
+        },
+      ]
+    }
+
+    const res = await app.fetch(
+      new Request('http://localhost/users/search?q=ada&limit=500&offset=4', {
+        headers: { 'x-user-id': '3' },
+      }),
+    )
+    const body = (await res.json()) as { data?: SearchResult[] }
+
+    expect(res.status).toBe(200)
+    expect(body.data).toHaveLength(1)
+    expect(body.data?.[0]).toMatchObject({ alias: 'Ada', userId: 22 })
+
+    const [dbArg, requesterIdArg, queryArg, limitArg, offsetArg] = calls[0] || []
+    expect(dbArg).toBe(testDb)
+    expect(requesterIdArg).toBe(3)
+    expect(queryArg).toBe('ada')
+    expect(limitArg).toBe(100)
+    expect(offsetArg).toBe(4)
+  })
+})
