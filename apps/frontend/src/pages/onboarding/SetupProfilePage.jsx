@@ -2,180 +2,201 @@
 // Profile Setup Page — Multi-step onboarding
 // ============================================
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { saveProfile } from '../../api/profile';
-import { useAuth } from '../../context/AuthContext';
-import { useApp } from '../../context/AppContext';
-import { AvatarPicker } from '../../components/AvatarPicker';
-import { Button } from '../../components/ui/Button';
-import { Input, Textarea } from '../../components/ui/Input';
-import { DEPARTMENTS, LEVELS, INTENTS, INTERESTS } from '../../utils/mockData';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { DEPARTMENTS, getInterestsCatalog, INTENTS, LEVELS } from '../../api/catalog'
+import { saveProfile } from '../../api/profile'
+import { AvatarPicker } from '../../components/AvatarPicker'
+import { Button } from '../../components/ui/Button'
+import { Textarea } from '../../components/ui/Input'
+import { useApp } from '../../context/AppContext'
+import { useAuth } from '../../context/AuthContext'
 
-const STEPS = ['avatar', 'basics', 'intent', 'interests', 'bio'];
+const STEPS = ['avatar', 'basics', 'intent', 'interests', 'bio']
 
 export default function SetupProfilePage() {
-  const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
-  const { showToast } = useApp();
+  const navigate = useNavigate()
+  const { user, updateUser } = useAuth()
+  const { showToast } = useApp()
 
-  const [step, setStep] = useState(0);
-  const [saving, setSaving] = useState(false);
+  const [step, setStep] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [interestOptions, setInterestOptions] = useState([])
 
   const [profile, setProfile] = useState({
-    avatarStyle: 'notionists',
     avatarSeed: 'felix',
+    avatarStyle: 'notionists',
+    bio: '',
     department: '',
-    level: '',
     gender: '',
     intent: '',
     interests: [],
-    bio: '',
-  });
+    level: '',
+  })
 
-  const setField = (field) => (value) => setProfile(p => ({ ...p, [field]: value }));
+  React.useEffect(() => {
+    getInterestsCatalog().then(setInterestOptions)
+  }, [])
 
-  const totalSteps = STEPS.length;
-  const currentStep = STEPS[step];
-  const progress = ((step) / (totalSteps - 1)) * 100;
+  const setField = (field) => (value) => setProfile((p) => ({ ...p, [field]: value }))
+
+  const totalSteps = STEPS.length
+  const currentStep = STEPS[step]
 
   const canProceed = () => {
     switch (currentStep) {
-      case 'avatar': return profile.avatarStyle && profile.avatarSeed;
-      case 'basics': return profile.department && profile.level && profile.gender;
-      case 'intent': return !!profile.intent;
-      case 'interests': return profile.interests.length >= 2;
-      case 'bio': return profile.bio.trim().length >= 30;
-      default: return true;
+      case 'avatar':
+        return profile.avatarStyle && profile.avatarSeed
+      case 'basics':
+        return profile.department && profile.level && profile.gender
+      case 'intent':
+        return !!profile.intent
+      case 'interests':
+        return profile.interests.length >= 2
+      case 'bio':
+        return profile.bio.trim().length >= 30
+      default:
+        return true
     }
-  };
+  }
 
   const handleNext = async () => {
     if (step < totalSteps - 1) {
-      setStep(s => s + 1);
-      return;
+      setStep((s) => s + 1)
+      return
     }
     // Final step — save
-    setSaving(true);
+    setSaving(true)
     try {
-      await saveProfile({ ...profile, userId: user?.id });
-      updateUser({ profileComplete: true, profile });
-      showToast({ message: 'Profile created! Welcome 🎉', type: 'success' });
-      navigate('/app/discover', { replace: true });
+      await saveProfile({ ...profile, userId: user?.id })
+      updateUser({ profile, profileComplete: true })
+      showToast({ message: 'Profile created! Welcome 🎉', type: 'success' })
+      navigate('/app/discover', { replace: true })
     } catch (err) {
-      showToast({ message: 'Failed to save profile', type: 'error' });
+      showToast({ message: err?.message || 'Failed to save profile', type: 'error' })
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleBack = () => {
-    if (step > 0) setStep(s => s - 1);
-  };
+    if (step > 0) setStep((s) => s - 1)
+  }
 
   const toggleInterest = (interest) => {
-    setProfile(p => {
-      const exists = p.interests.includes(interest);
-      if (exists) return { ...p, interests: p.interests.filter(i => i !== interest) };
-      if (p.interests.length >= 8) return p; // max 8
-      return { ...p, interests: [...p.interests, interest] };
-    });
-  };
+    setProfile((p) => {
+      const exists = p.interests.includes(interest)
+      if (exists) return { ...p, interests: p.interests.filter((i) => i !== interest) }
+      if (p.interests.length >= 8) return p // max 8
+      return { ...p, interests: [...p.interests, interest] }
+    })
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'var(--surface-elevated)',
-    }}>
+    <div
+      style={{
+        background: 'var(--surface-elevated)',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+      }}
+    >
       {/* Header */}
-      <div style={{
-        padding: '1.25rem 1.5rem 0',
-        maxWidth: 540,
-        width: '100%',
-        margin: '0 auto',
-      }}>
+      <div
+        style={{
+          margin: '0 auto',
+          maxWidth: 540,
+          padding: '1.25rem 1.5rem 0',
+          width: '100%',
+        }}
+      >
         {/* Progress */}
         <div style={{ marginBottom: '0.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-navy)' }}>
+            <span style={{ color: 'var(--color-navy)', fontSize: '0.8125rem', fontWeight: 600 }}>
               Set up your profile
             </span>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
               {step + 1} of {totalSteps}
             </span>
           </div>
-          <div style={{ height: 4, borderRadius: 4, background: 'var(--border-light)', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%',
-              width: `${(step / (totalSteps - 1)) * 100}%`,
-              background: 'var(--color-navy)',
+          <div
+            style={{
+              background: 'var(--border-light)',
               borderRadius: 4,
-              transition: 'width var(--transition-slow)',
-            }} />
+              height: 4,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--color-navy)',
+                borderRadius: 4,
+                height: '100%',
+                transition: 'width var(--transition-slow)',
+                width: `${(step / (totalSteps - 1)) * 100}%`,
+              }}
+            />
           </div>
         </div>
       </div>
 
       {/* Step content */}
-      <div style={{
-        flex: 1,
-        padding: '1.5rem',
-        maxWidth: 540,
-        width: '100%',
-        margin: '0 auto',
-        overflowY: 'auto',
-      }}>
-        <div style={{ animation: 'fadeSlideUp 0.35s both' }} key={step}>
+      <div
+        style={{
+          flex: 1,
+          margin: '0 auto',
+          maxWidth: 540,
+          overflowY: 'auto',
+          padding: '1.5rem',
+          width: '100%',
+        }}
+      >
+        <div key={step} style={{ animation: 'fadeSlideUp 0.35s both' }}>
           {currentStep === 'avatar' && (
-            <StepAvatar profile={profile} onSelect={(av) => setProfile(p => ({ ...p, ...av }))} />
+            <StepAvatar onSelect={(av) => setProfile((p) => ({ ...p, ...av }))} profile={profile} />
           )}
-          {currentStep === 'basics' && (
-            <StepBasics profile={profile} setField={setField} />
-          )}
-          {currentStep === 'intent' && (
-            <StepIntent profile={profile} setField={setField} />
-          )}
+          {currentStep === 'basics' && <StepBasics profile={profile} setField={setField} />}
+          {currentStep === 'intent' && <StepIntent profile={profile} setField={setField} />}
           {currentStep === 'interests' && (
-            <StepInterests profile={profile} onToggle={toggleInterest} />
+            <StepInterests onToggle={toggleInterest} options={interestOptions} profile={profile} />
           )}
-          {currentStep === 'bio' && (
-            <StepBio profile={profile} setField={setField} />
-          )}
+          {currentStep === 'bio' && <StepBio profile={profile} setField={setField} />}
         </div>
       </div>
 
       {/* Footer navigation */}
-      <div style={{
-        padding: '1rem 1.5rem',
-        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-        background: '#fff',
-        borderTop: '1px solid var(--border-light)',
-        display: 'flex',
-        gap: '0.75rem',
-        maxWidth: 540,
-        width: '100%',
-        margin: '0 auto',
-      }}>
+      <div
+        style={{
+          background: '#fff',
+          borderTop: '1px solid var(--border-light)',
+          display: 'flex',
+          gap: '0.75rem',
+          margin: '0 auto',
+          maxWidth: 540,
+          padding: '1rem 1.5rem',
+          paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
+          width: '100%',
+        }}
+      >
         {step > 0 && (
-          <Button variant="secondary" size="lg" onClick={handleBack} style={{ flex: '0 0 auto' }}>
+          <Button onClick={handleBack} size="lg" style={{ flex: '0 0 auto' }} variant="secondary">
             Back
           </Button>
         )}
         <Button
-          variant={step === totalSteps - 1 ? 'amber' : 'primary'}
-          size="lg"
-          fullWidth
-          onClick={handleNext}
           disabled={!canProceed()}
+          fullWidth
           loading={saving}
+          onClick={handleNext}
+          size="lg"
+          variant={step === totalSteps - 1 ? 'amber' : 'primary'}
         >
           {step === totalSteps - 1 ? 'Complete Profile 🎉' : 'Continue'}
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 // ---- Step Components ----
@@ -185,14 +206,15 @@ function StepAvatar({ profile, onSelect }) {
     <div>
       <h2 style={stepTitleStyle}>Choose your avatar</h2>
       <p style={stepDescStyle}>
-        Your avatar is the first thing others see. Pick one that feels like you — no photos required.
+        Your avatar is the first thing others see. Pick one that feels like you — no photos
+        required.
       </p>
       <AvatarPicker
-        selected={{ style: profile.avatarStyle, seed: profile.avatarSeed }}
         onSelect={onSelect}
+        selected={{ seed: profile.avatarSeed, style: profile.avatarStyle }}
       />
     </div>
-  );
+  )
 }
 
 function StepBasics({ profile, setField }) {
@@ -205,36 +227,44 @@ function StepBasics({ profile, setField }) {
 
       {/* Department */}
       <div>
-        <label style={selectLabelStyle}>Department *</label>
+        <label htmlFor="department-select" style={selectLabelStyle}>
+          Department *
+        </label>
         <select
-          value={profile.department}
-          onChange={e => setField('department')(e.target.value)}
+          id="department-select"
+          onChange={(e) => setField('department')(e.target.value)}
           style={selectStyle}
+          value={profile.department}
         >
           <option value="">Select your department</option>
-          {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+          {DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
         </select>
       </div>
 
       {/* Level */}
       <div>
-        <label style={selectLabelStyle}>Level *</label>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {LEVELS.map(l => (
+        <p style={selectLabelStyle}>Level *</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          {LEVELS.map((l) => (
             <button
               key={l}
               onClick={() => setField('level')(l)}
               style={{
-                padding: '0.5rem 1.25rem',
-                borderRadius: 'var(--radius-full)',
-                border: `2px solid ${profile.level === l ? 'var(--color-navy)' : 'var(--border-medium)'}`,
                 background: profile.level === l ? 'var(--color-navy)' : '#fff',
+                border: `2px solid ${profile.level === l ? 'var(--color-navy)' : 'var(--border-medium)'}`,
+                borderRadius: 'var(--radius-full)',
                 color: profile.level === l ? '#fff' : 'var(--text-secondary)',
-                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
                 fontSize: '0.9375rem',
+                fontWeight: 500,
+                padding: '0.5rem 1.25rem',
+                transition: 'all var(--transition-fast)',
               }}
+              type="button"
             >
               {l}L
             </button>
@@ -244,24 +274,25 @@ function StepBasics({ profile, setField }) {
 
       {/* Gender */}
       <div>
-        <label style={selectLabelStyle}>Gender *</label>
+        <p style={selectLabelStyle}>Gender *</p>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          {['Male', 'Female', 'Other'].map(g => (
+          {['Male', 'Female', 'Other'].map((g) => (
             <button
               key={g}
               onClick={() => setField('gender')(g.toLowerCase())}
               style={{
-                flex: 1,
-                padding: '0.75rem',
-                borderRadius: 'var(--radius-md)',
-                border: `2px solid ${profile.gender === g.toLowerCase() ? 'var(--color-navy)' : 'var(--border-medium)'}`,
                 background: profile.gender === g.toLowerCase() ? 'var(--color-navy)' : '#fff',
+                border: `2px solid ${profile.gender === g.toLowerCase() ? 'var(--color-navy)' : 'var(--border-medium)'}`,
+                borderRadius: 'var(--radius-md)',
                 color: profile.gender === g.toLowerCase() ? '#fff' : 'var(--text-secondary)',
-                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
+                flex: 1,
                 fontSize: '0.9375rem',
+                fontWeight: 500,
+                padding: '0.75rem',
+                transition: 'all var(--transition-fast)',
               }}
+              type="button"
             >
               {g}
             </button>
@@ -269,60 +300,65 @@ function StepBasics({ profile, setField }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function StepIntent({ profile, setField }) {
   return (
     <div>
       <h2 style={stepTitleStyle}>What are you here for?</h2>
-      <p style={stepDescStyle}>
-        Be honest — this helps us show you to people with similar goals.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginTop: '1.5rem' }}>
-        {INTENTS.map(intent => (
+      <p style={stepDescStyle}>Be honest — this helps us show you to people with similar goals.</p>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginTop: '1.5rem' }}
+      >
+        {INTENTS.map((intent) => (
           <button
             key={intent.id}
             onClick={() => setField('intent')(intent.id)}
             style={{
-              display: 'flex',
               alignItems: 'center',
+              background: profile.intent === intent.id ? 'rgba(18,23,74,0.04)' : '#fff',
+              border: `2px solid ${profile.intent === intent.id ? 'var(--color-navy)' : 'var(--border-light)'}`,
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: profile.intent === intent.id ? 'none' : 'var(--shadow-sm)',
+              cursor: 'pointer',
+              display: 'flex',
               gap: '1rem',
               padding: '1.125rem 1.25rem',
-              borderRadius: 'var(--radius-lg)',
-              border: `2px solid ${profile.intent === intent.id ? 'var(--color-navy)' : 'var(--border-light)'}`,
-              background: profile.intent === intent.id ? 'rgba(18,23,74,0.04)' : '#fff',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)',
               textAlign: 'left',
+              transition: 'all var(--transition-fast)',
               width: '100%',
-              boxShadow: profile.intent === intent.id ? 'none' : 'var(--shadow-sm)',
             }}
+            type="button"
           >
-            <span style={{
-              width: 44,
-              height: 44,
-              borderRadius: '50%',
-              background: `${intent.color}18`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.375rem',
-              flexShrink: 0,
-            }}>
+            <span
+              style={{
+                alignItems: 'center',
+                background: `${intent.color}18`,
+                borderRadius: '50%',
+                display: 'flex',
+                flexShrink: 0,
+                fontSize: '1.375rem',
+                height: 44,
+                justifyContent: 'center',
+                width: 44,
+              }}
+            >
               {intent.emoji}
             </span>
             <div>
-              <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{intent.label}</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+              <p style={{ color: 'var(--text-primary)', fontWeight: 600, marginBottom: '2px' }}>
+                {intent.label}
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
                 {intent.id === 'friendship' && 'Find people to hang out and vibe with'}
                 {intent.id === 'dating' && 'Explore romantic connections on campus'}
                 {intent.id === 'networking' && 'Build professional relationships'}
-                {intent.id === 'study_buddy' && 'Find focused, like-minded study partners'}
+                {intent.id === 'study buddy' && 'Find focused, like-minded study partners'}
               </p>
             </div>
             {profile.intent === intent.id && (
-              <div style={{ marginLeft: 'auto', color: 'var(--color-navy)', flexShrink: 0 }}>
+              <div style={{ color: 'var(--color-navy)', flexShrink: 0, marginLeft: 'auto' }}>
                 <CheckIcon />
               </div>
             )}
@@ -330,137 +366,161 @@ function StepIntent({ profile, setField }) {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
-function StepInterests({ profile, onToggle }) {
+function StepInterests({ profile, onToggle, options }) {
   return (
     <div>
       <h2 style={stepTitleStyle}>Your interests</h2>
       <p style={stepDescStyle}>
         Select 2–8 things you genuinely care about. This drives your matches.
       </p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', marginBottom: '1.25rem' }}>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: '1.25rem',
+          marginTop: '0.5rem',
+        }}
+      >
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
           {profile.interests.length} selected
         </span>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>max 8</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>max 8</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem' }}>
-        {INTERESTS.map(interest => {
-          const selected = profile.interests.includes(interest);
+        {options.map((interest) => {
+          const selected = profile.interests.includes(interest)
           return (
             <button
               key={interest}
               onClick={() => onToggle(interest)}
               style={{
-                padding: '0.5rem 1.125rem',
-                borderRadius: 'var(--radius-full)',
-                border: `2px solid ${selected ? 'var(--color-navy)' : 'var(--border-medium)'}`,
                 background: selected ? 'var(--color-navy)' : '#fff',
+                border: `2px solid ${selected ? 'var(--color-navy)' : 'var(--border-medium)'}`,
+                borderRadius: 'var(--radius-full)',
                 color: selected ? '#fff' : 'var(--text-secondary)',
-                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
                 fontSize: '0.875rem',
+                fontWeight: 500,
+                padding: '0.5rem 1.125rem',
                 transform: selected ? 'scale(1.02)' : 'scale(1)',
+                transition: 'all var(--transition-fast)',
               }}
+              type="button"
             >
               {interest}
             </button>
-          );
+          )
         })}
       </div>
       {profile.interests.length < 2 && (
-        <p style={{ marginTop: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', marginTop: '1rem' }}>
           Select at least 2 interests to continue
         </p>
       )}
     </div>
-  );
+  )
 }
 
 function StepBio({ profile, setField }) {
-  const wordCount = profile.bio.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = profile.bio.trim().split(/\s+/).filter(Boolean).length
 
   return (
     <div>
       <h2 style={stepTitleStyle}>Tell your story</h2>
       <p style={stepDescStyle}>
-        Your bio is your first impression. Be authentic — people connect with real personalities, not resumes.
+        Your bio is your first impression. Be authentic — people connect with real personalities,
+        not resumes.
       </p>
 
-      <div style={{
-        padding: '1rem 1.25rem',
-        background: 'rgba(18,23,74,0.04)',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-light)',
-        marginBottom: '1.5rem',
-        marginTop: '1rem',
-      }}>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-          💡 <strong>Pro tip:</strong> Mention your passions, a quirky fact about yourself, or what you're looking for. Avoid generic statements like "I love to have fun."
+      <div
+        style={{
+          background: 'rgba(18,23,74,0.04)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '1.5rem',
+          marginTop: '1rem',
+          padding: '1rem 1.25rem',
+        }}
+      >
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', lineHeight: 1.7 }}>
+          💡 <strong>Pro tip:</strong> Mention your passions, a quirky fact about yourself, or what
+          you're looking for. Avoid generic statements like "I love to have fun."
         </p>
       </div>
 
       <Textarea
+        hint={
+          profile.bio.length < 30
+            ? `At least ${30 - profile.bio.length} more characters needed`
+            : `${wordCount} words — looking good!`
+        }
         label="Your Bio"
-        value={profile.bio}
-        onChange={e => setField('bio')(e.target.value)}
-        placeholder='e.g. "400L CS student who can talk about distributed systems and Afrobeats all day. Currently building a fintech side project and looking for people who debate ideas seriously. Ask me about my worst hackathon story..."'
-        rows={6}
         maxLength={400}
+        onChange={(e) => setField('bio')(e.target.value)}
+        placeholder='e.g. "400L CS student who can talk about distributed systems and Afrobeats all day. Currently building a fintech side project and looking for people who debate ideas seriously. Ask me about my worst hackathon story..."'
         required
-        hint={profile.bio.length < 30 ? `At least ${30 - profile.bio.length} more characters needed` : `${wordCount} words — looking good!`}
+        rows={6}
+        value={profile.bio}
       />
     </div>
-  );
+  )
 }
 
 // ---- Shared styles ----
 const stepTitleStyle = {
+  color: 'var(--color-navy)',
   fontFamily: 'var(--font-display)',
   fontSize: '1.625rem',
   fontWeight: 600,
-  color: 'var(--color-navy)',
-  marginBottom: '0.5rem',
   lineHeight: 1.25,
-};
+  marginBottom: '0.5rem',
+}
 const stepDescStyle = {
-  fontSize: '0.9375rem',
   color: 'var(--text-secondary)',
+  fontSize: '0.9375rem',
   lineHeight: 1.6,
   marginBottom: '1.5rem',
-};
+}
 const selectLabelStyle = {
+  color: 'var(--text-secondary)',
   display: 'block',
   fontSize: '0.8125rem',
   fontWeight: 500,
-  color: 'var(--text-secondary)',
-  textTransform: 'uppercase',
   letterSpacing: '0.06em',
   marginBottom: '0.5rem',
-};
+  textTransform: 'uppercase',
+}
 const selectStyle = {
-  width: '100%',
-  padding: '0.65rem 0.875rem',
-  borderRadius: 'var(--radius-md)',
-  border: '2px solid var(--border-medium)',
+  appearance: 'none',
   background: '#fff',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%234a5280' strokeWidth='1.5' strokeLinecap='round'/%3E%3C/svg%3E")`,
+  backgroundPosition: 'right 1rem center',
+  backgroundRepeat: 'no-repeat',
+  border: '2px solid var(--border-medium)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text-primary)',
   fontFamily: 'var(--font-body)',
   fontSize: '0.9375rem',
-  color: 'var(--text-primary)',
   outline: 'none',
-  appearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%234a5280' strokeWidth='1.5' strokeLinecap='round'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 1rem center',
-};
+  padding: '0.65rem 0.875rem',
+  width: '100%',
+}
 
 function CheckIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <svg
+      fill="none"
+      height="18"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      viewBox="0 0 24 24"
+      width="18"
+    >
+      <title>Selected</title>
       <polyline points="20 6 9 17 4 12" />
     </svg>
-  );
+  )
 }

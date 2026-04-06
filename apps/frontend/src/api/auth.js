@@ -4,6 +4,21 @@ const STORAGE_KEY_USER = 'bu_connect_user'
 const STORAGE_KEY_VERIFIED = 'bu_connect_verified'
 const STORAGE_KEY_TOKEN = 'bu_connect_token'
 
+function normalizeUserId(id) {
+  if (typeof id === 'number' && Number.isFinite(id)) return id
+  if (typeof id === 'string') {
+    const numeric = Number(id)
+    if (Number.isFinite(numeric)) return numeric
+
+    const match = id.match(/\d+/)
+    if (match) {
+      const extracted = Number(match[0])
+      if (Number.isFinite(extracted)) return extracted
+    }
+  }
+  return null
+}
+
 function toDisplayName(email, providedName) {
   if (providedName?.trim()) return providedName.trim()
   const localPart = email.split('@')[0] || 'Student'
@@ -16,10 +31,11 @@ function toDisplayName(email, providedName) {
 
 function normalizeUser(user, fallback = {}) {
   const role = user?.role || fallback.role || 'free'
+  const id = normalizeUserId(user?.id ?? fallback.id)
   return {
     createdAt: user?.createdAt ?? fallback.createdAt ?? new Date().toISOString(),
     email: user?.email ?? fallback.email ?? '',
-    id: user?.id ?? fallback.id ?? null,
+    id,
     isPremium: role === 'premium' || role === 'admin',
     isVerified: Boolean(user?.isVerified ?? fallback.isVerified),
     name: fallback.name || toDisplayName(user?.email ?? fallback.email ?? '', fallback.name),
@@ -62,14 +78,15 @@ export async function registerUser({ name, email, password }) {
     throw new Error(error.value?.error || 'Registration failed')
   }
 
-  const user = normalizeUser(data?.user, {
+  const payload = data?.data || data || {}
+  const user = normalizeUser(payload.user, {
     email,
     isVerified: false,
     name,
     profileComplete: false,
   })
   saveSession({ token: '', user })
-  return { user, verificationCode: data?.verificationCode }
+  return { user, verificationCode: payload.verificationCode }
 }
 
 export async function verifyEmail({ email, code }) {
@@ -78,19 +95,26 @@ export async function verifyEmail({ email, code }) {
     throw new Error(error.value?.error || 'Verification failed')
   }
 
-  const existing = getCurrentUser() || {}
-  const user = normalizeUser(existing, { ...existing, email, isVerified: true })
-  saveSession({ token: getStoredToken(), user })
+  const payload = data?.data || data || {}
+  const user =
+    (payload.user && normalizeUser(payload.user, payload.user)) ||
+    updateStoredUser({ email, isVerified: true }) ||
+    normalizeUser({ email, isVerified: true })
+  saveSession({ token: payload.token || getStoredToken(), user })
 
-  return { result: data, user }
+  return { result: payload, user }
 }
 
 export async function resendVerificationEmail({ email }) {
-  const { error } = await api.auth.forgotPassword.post({ email })
+  const { data, error } = await api.auth['forgot-password'].post({ email })
   if (error) {
     throw new Error(error.value?.error || 'Failed to resend code')
   }
-  return { message: 'Verification code resent.' }
+  const payload = data?.data || data || {}
+  return {
+    message: 'Verification code resent.',
+    verificationCode: payload.verificationCode || null,
+  }
 }
 
 export async function loginUser({ email, password }) {
@@ -99,17 +123,25 @@ export async function loginUser({ email, password }) {
     throw new Error(error.value?.error || 'Invalid email or password.')
   }
 
-  const user = normalizeUser(data?.user, {
+  const payload = data?.data || data || {}
+  const user = normalizeUser(payload.user, {
     email,
     profileComplete: getCurrentUser()?.profileComplete,
   })
-  saveSession({ token: data?.token || '', user })
-  return { token: data?.token, user }
+  saveSession({ token: payload.token || '', user })
+  return { token: payload.token, user }
 }
 
 export function getCurrentUser() {
   const stored = localStorage.getItem(STORAGE_KEY_USER)
-  return stored ? JSON.parse(stored) : null
+  if (!stored) return null
+
+  const parsed = JSON.parse(stored)
+  const normalized = normalizeUser(parsed, parsed)
+  if (normalized.id !== parsed.id) {
+    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(normalized))
+  }
+  return normalized
 }
 
 export async function logoutUser() {
@@ -123,7 +155,8 @@ export async function logoutUser() {
 export function updateStoredUser(updates) {
   const stored = getCurrentUser()
   if (!stored) return null
-  const user = normalizeUser(stored, { ...stored, ...updates })
+  const merged = { ...stored, ...updates }
+  const user = normalizeUser(merged, merged)
   localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user))
   return user
 }

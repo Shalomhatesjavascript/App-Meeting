@@ -45,6 +45,7 @@ export function IntentBadge({ intent }) {
     dating: { color: 'amber', emoji: '💛', label: 'Dating' },
     friendship: { color: 'green', emoji: '🤝', label: 'Friendship' },
     networking: { color: 'navy', emoji: '🌐', label: 'Networking' },
+    'study buddy': { color: 'lavender', emoji: '📚', label: 'Study Buddy' },
     study_buddy: { color: 'lavender', emoji: '📚', label: 'Study Buddy' },
   }
   const config = map[intent] || map.friendship

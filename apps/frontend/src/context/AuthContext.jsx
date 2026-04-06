@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback((updates) => {
     const updated = updateStoredUser(updates)
     if (updated) setUser(updated)
+    return updated
   }, [])
 
   const value = {

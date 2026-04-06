@@ -3,6 +3,10 @@ import { getAuthHeaders, getCurrentUser, updateStoredUser } from './auth'
 
 const PROFILE_KEY = 'bu_connect_profile'
 
+function unwrapData(result) {
+  return result?.data?.data || result?.data || []
+}
+
 function toBackendProfileInput(profileData, existing = {}) {
   const user = getCurrentUser()
   const displayName = user?.name || 'Student'
@@ -28,8 +32,8 @@ function toFrontendProfile(baseProfile, interests = []) {
 }
 
 async function ensureInterestIds(names) {
-  const { data: allInterests } = await api.interests.get({ headers: getAuthHeaders() })
-  const rows = Array.isArray(allInterests) ? allInterests : []
+  const result = await api.interests.get({ headers: getAuthHeaders() })
+  const rows = Array.isArray(unwrapData(result)) ? unwrapData(result) : []
 
   const ids = []
   for (const name of names) {
@@ -46,11 +50,12 @@ async function ensureInterestIds(names) {
 
 async function syncUserInterests(userId, interestNames) {
   const ids = await ensureInterestIds(interestNames || [])
-  const existing = await api['user-interests']({ userId: String(userId) }).get(undefined, {
+  const existingResult = await api['user-interests']({ userId: String(userId) }).get(undefined, {
     headers: getAuthHeaders(),
   })
 
-  const currentIds = (existing.data || []).map((entry) => entry.interest_id)
+  const existing = Array.isArray(unwrapData(existingResult)) ? unwrapData(existingResult) : []
+  const currentIds = existing.map((entry) => entry.interest_id)
   const toAdd = ids.filter((id) => !currentIds.includes(id))
   const toRemove = currentIds.filter((id) => !ids.includes(id))
 
@@ -75,21 +80,28 @@ async function syncUserInterests(userId, interestNames) {
 
 export async function saveProfile(profileData) {
   const user = getCurrentUser()
-  if (!user?.id) {
+  const headers = getAuthHeaders()
+  if (Object.keys(headers).length === 0) {
     throw new Error('You must be logged in to save a profile')
   }
 
   const body = toBackendProfileInput(profileData)
-  const { data, error } = await api.profiles.post(body, { headers: getAuthHeaders() })
+  const { data, error } = await api.profiles.post(body, { headers })
   if (error) {
     throw new Error(error.value?.error || 'Failed to save profile')
   }
 
-  await syncUserInterests(user.id, profileData.interests || [])
+  const createdProfile = data?.data || data || {}
+  const userId = createdProfile.user_id ?? user?.id
+  if (!userId) {
+    throw new Error('Failed to save profile')
+  }
 
-  const profile = toFrontendProfile(data, profileData.interests || [])
+  await syncUserInterests(userId, profileData.interests || [])
+
+  const profile = toFrontendProfile(createdProfile, profileData.interests || [])
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
-  updateStoredUser({ profile, profileComplete: true })
+  updateStoredUser({ id: userId, profile, profileComplete: true })
 
   return { profile }
 }
@@ -111,10 +123,12 @@ export async function getProfile() {
     throw new Error(error.value?.error || 'Failed to fetch profile')
   }
 
-  const interests = (userInterests.data || []).map((entry) => entry.name)
-  const profile = toFrontendProfile(data, interests)
+  const interestsData = Array.isArray(unwrapData(userInterests)) ? unwrapData(userInterests) : []
+  const interests = interestsData.map((entry) => entry.name)
+  const profileData = data?.data || data
+  const profile = toFrontendProfile(profileData, interests)
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
-  updateStoredUser({ profile, profileComplete: true })
+  updateStoredUser({ id: profileData?.user_id ?? user.id, profile, profileComplete: true })
   return profile
 }
 
@@ -138,9 +152,10 @@ export async function updateProfile(updates) {
   const interestList = updates.interests || existing.interests || []
   await syncUserInterests(user.id, interestList)
 
-  const profile = toFrontendProfile({ ...existing, ...data }, interestList)
+  const profileData = data?.data || data
+  const profile = toFrontendProfile({ ...existing, ...profileData }, interestList)
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
-  updateStoredUser({ profile })
+  updateStoredUser({ id: user.id, profile, profileComplete: true })
 
   return { profile }
 }

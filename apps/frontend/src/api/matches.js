@@ -24,6 +24,41 @@ async function getProfileByUserId(userId) {
   return data || null
 }
 
+/**
+ * Get discovery candidates from matching algorithm (recommended users).
+ * This uses the new scoring-based matching endpoint instead of just all users.
+ */
+export async function getDiscoveryCandidates(limit = 50, offset = 0) {
+  const { data, error } = await api.discovery.candidates.get(
+    { limit: String(limit), offset: String(offset) },
+    { headers: getAuthHeaders() },
+  )
+
+  if (error) {
+    throw new Error(error.value?.error || 'Failed to load recommendations')
+  }
+
+  // Transform candidate data to discover card format
+  const candidates = Array.isArray(data?.data) ? data.data : []
+  return candidates.map((candidate) => ({
+    avatarSeed: (candidate.alias || 'student').toLowerCase().replace(/\s+/g, '-'),
+    avatarStyle: 'notionists',
+    bio: candidate.bio || 'Hello there!',
+    department: candidate.department,
+    id: String(candidate.userId),
+    intent: candidate.intent,
+    interestNames: candidate.interestNames || [],
+    isVerified: false, // TODO: add to candidate response if needed
+    level: candidate.level,
+    matchScore: candidate.score, // For debugging/display
+    name: candidate.alias,
+  }))
+}
+
+/**
+ * Legacy function - get all users without matching algorithm.
+ * Kept for backwards compatibility if needed.
+ */
 export async function getDiscoverUsers() {
   const current = getCurrentUser()
   const { data, error } = await api.users.get({ headers: getAuthHeaders() })
