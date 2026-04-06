@@ -1,0 +1,3 @@
+- [ ] Make the backend serve the frontend html directly. No need for 2 servers.
+    -  Also, this way, we can dal with session cookie stuff more sanely
+- [ ] Replace the demo SMTP/OTP flow with real email delivery and persistent verification tokens; make resend send a verification email/code instead of using forgot-password.

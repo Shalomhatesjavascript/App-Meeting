@@ -1,0 +1,149 @@
+Babcock University Meetup Application
+Complete System Diagrams and Page Interaction
+Explanations
+
+1. Activity Diagram – Overall User Flow
+Start
+|
+v
+User Registers / Logs In
+|
+v
+Email Verification
+|
+v
+Profile Creation / Update
+|
+v
+Discover (Swipe Users)
+|
+v
+Mutual Like?
+|---- No ----> Continue Swiping
+|
+Yes
+|
+v
+Match Created
+|
+v
+Chat Enabled
+|
+v
+Subscription Check
+|
+v
+Access Limited / Unlimited Features
+|
+v
+End
+
+This activity diagram represents the end-to-end journey of a user within the system.
+
+2. Sequence Diagram – Authentication Flow
+User -> Frontend: Enter credentials
+Frontend -> Backend: POST /auth/login
+Backend -> Database: Validate user
+Database -> Backend: User data
+Backend -> Frontend: JWT Token
+Frontend -> User: Login successful
+
+This diagram explains how authentication requests flow through the system.
+
+3. Sequence Diagram – Matching & Messaging
+User -> Frontend: Swipe Right
+Frontend -> Backend: POST /match/like
+Backend -> Database: Store Like
+Backend -> Backend: Check mutual interest
+Backend -> Database: Create Match
+Backend -> Frontend: Match confirmed
+Frontend -> User: Open Chat
+User -> Frontend: Send Message
+Frontend -> Backend: POST /messages
+Backend -> Database: Save Message
+
+This sequence diagram shows how users are matched and allowed to chat.
+
+4. Data Flow Diagram (DFD – Level 0)
+User
+|
+v
+Meetup Application
+|
+v
+Database
+
+DFD Level 0 shows the system as a single process interacting with users and the database.
+
+5. Data Flow Diagram (DFD – Level 1)
+User
+|
+v
+[Authentication Module] ---> Database
+|
+v
+[Profile Module] ---> Database
+|
+v
+[Matching Module] ---> Database
+|
+v
+[Messaging Module] ---> Database
+|
+v
+[Subscription Module] ---> Payment Gateway
+
+DFD Level 1 decomposes the system into major functional modules.
+
+6. State Diagram – User Account
+Registered
+|
+v
+Verified
+|
+v
+Free User
+|
+v
+Paid Subscriber
+|
+v
+Subscription Expired
+|
+v
+Free User
+
+This diagram represents transitions between user account states.
+
+7. ER Diagram – Database Relationships
+User --- Profile
+User ---< Matches >--- User
+Match --- Messages
+User --- Subscriptions
+User ---< UserInterests >--- Interests
+
+The ER diagram shows relationships between major database entities.
+
+8. Page Interaction & Navigation Explanation
+Login/Register Page: - Communicates with Auth API - Redirects to Profile Setup upon success
+Profile Page: - Sends profile data to Backend - Required before accessing Discover page Discover
+Page: - Fetches user cards - Sends swipe actions to Matching API Matches Page: - Displays
+mutual matches - Entry point to Chat page Chat Page: - Sends and receives messages - Enforces
+subscription limits Subscription Page: - Handles payments - Updates user access level Admin
+Dashboard: - Restricted to admins - Manages users, reports, and analytics
+
+9. Deployment Diagram
+[Browser / PWA]
+|
+v
+[React + Vite Frontend]
+|
+v
+[Elysia + Bun Backend]
+|
+v
+[PostgreSQL Database]
+
+This diagram shows how the system is deployed and communicates.
+
+
