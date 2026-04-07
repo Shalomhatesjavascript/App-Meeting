@@ -1,6 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
+import { AuthErrorCodeEnum } from '../../lib/auth-enums'
+import { createRouteError } from '../../lib/route-error'
 
 type RequestUser = { id: number; role: 'free' | 'premium' | 'admin'; email?: string }
 
@@ -102,7 +104,7 @@ describe('Users Route Search', () => {
 
   it('requires authentication', async () => {
     requireUserImpl = async () => {
-      throw new Error('Authentication required')
+      throw createRouteError(AuthErrorCodeEnum.AUTHENTICATION_REQUIRED, 'Authentication required')
     }
 
     const res = await app.fetch(new Request('http://localhost/users/search?q=ada'))

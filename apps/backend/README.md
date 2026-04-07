@@ -15,6 +15,8 @@ Assuming all dependencies are already installed (`bun install`), and the termina
 
 The backend will use your local Wrangler D1 state for runtime DB access.
 
+Temporary note: email verification still has a `123456` bypass in `AuthModel.verify` until real verification tokens are added.
+
 ## Getting Started
 To get started with this template, simply paste this command into your terminal:
 ```bash
@@ -27,7 +29,7 @@ To start the development server run:
 bun run dev
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+Open http://localhost:8787/ with your browser to see the result.
 
 ## D1 Notes (Important)
 
@@ -39,7 +41,7 @@ Open http://localhost:3000/ with your browser to see the result.
 ### Local-first workflow (recommended)
 
 - Reset local D1, apply migrations, and seed demo data:
-	- `bun run db:local:setup` (alias of `db:local:reset`)
+	- `bun run onboard`
 - Re-seed local D1 without reset:
 	- `bun run db:local:seed`
 - Start backend against local D1:

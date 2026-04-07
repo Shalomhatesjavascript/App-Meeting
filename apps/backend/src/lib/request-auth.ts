@@ -4,8 +4,9 @@ import * as v from 'valibot'
 import { usersTable } from '../db/schema'
 import { getDrizzleDb } from '../db/utils'
 
-import { type AuthRole, AuthRoleEnum, AuthRoleSchema } from './auth-enums'
+import { AuthErrorCodeEnum, type AuthRole, AuthRoleEnum, AuthRoleSchema } from './auth-enums'
 import { verifyAuthToken } from './auth-token'
+import { createRouteError } from './route-error'
 
 export type RequestUser = {
   id: number
@@ -94,7 +95,7 @@ export async function requireUser(
 ): Promise<RequestUser> {
   const user = await getRequestUser(headers)
   if (!user) {
-    throw new Error('Authentication required')
+    throw createRouteError(AuthErrorCodeEnum.AUTHENTICATION_REQUIRED, 'Authentication required')
   }
   return user
 }
@@ -104,7 +105,7 @@ export async function requireAdmin(
 ): Promise<RequestUser> {
   const user = await requireUser(headers)
   if (user.role !== 'admin') {
-    throw new Error('Admin access required')
+    throw createRouteError(AuthErrorCodeEnum.FORBIDDEN, 'Admin access required')
   }
   return user
 }

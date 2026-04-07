@@ -2,6 +2,8 @@ import type { MessageCreateInput, MessageQueryInput, MessageReadInput } from '@r
 import { and, desc, eq, lt, or } from 'drizzle-orm'
 import { matchesTable, messagesTable } from '../../db/schema'
 import { getDrizzleDb } from '../../db/utils'
+import { AuthErrorCodeEnum } from '../../lib/auth-enums'
+import { createRouteError } from '../../lib/route-error'
 
 // This is a scaffold for message model logic.
 // Implement DB access functions here, using Drizzle ORM and the shared Valibot schemas for validation.
@@ -21,7 +23,7 @@ export async function createMessage(input: MessageCreateInput) {
   const db = getDrizzleDb()
   const allowed = await ensureMatchMember(input.match_id, input.sender_id)
   if (!allowed) {
-    throw new Error('Sender is not a participant in this match')
+    throw createRouteError(AuthErrorCodeEnum.FORBIDDEN, 'Sender is not a participant in this match')
   }
 
   const [created] = await db

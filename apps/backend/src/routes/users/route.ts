@@ -1,9 +1,4 @@
-import {
-  UserAdminActionSchema,
-  UserCreateSchema,
-  UserSearchQuerySchema,
-  UserUpdateSchema,
-} from '@repo/shared'
+import { UserCreateSchema, UserSearchQuerySchema, UserUpdateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
@@ -213,7 +208,7 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
         return status(routeError.status, routeError.body)
       }
     },
-    { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
+    { params: v.object({ id: v.string() }) },
   )
   // Approve a user (admin only)
   .post(
@@ -239,7 +234,7 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
         return status(routeError.status, routeError.body)
       }
     },
-    { body: UserAdminActionSchema, params: v.object({ id: v.string() }) },
+    { params: v.object({ id: v.string() }) },
   )
   // Get user statistics (admin only)
   .get(

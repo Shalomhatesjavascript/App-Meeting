@@ -3,6 +3,8 @@ import type { InferModel } from 'drizzle-orm'
 import { and, eq, gte, or } from 'drizzle-orm'
 import { likesTable, matchesTable, subscriptionsTable, usersTable } from '../../db/schema'
 import type { DB } from '../../db/utils'
+import { AuthErrorCodeEnum } from '../../lib/auth-enums'
+import { createRouteError } from '../../lib/route-error'
 
 // Type for a Like row
 export type Like = InferModel<typeof likesTable>
@@ -84,7 +86,7 @@ async function maybeCreateMatch(db: DB, fromUserId: number, toUserId: number) {
  */
 export async function createLike(db: DB, input: LikeCreateInput) {
   if (input.from_user_id === input.to_user_id) {
-    throw new Error('You cannot like yourself')
+    throw createRouteError(AuthErrorCodeEnum.VALIDATION_ERROR, 'You cannot like yourself')
   }
 
   const existing = await db

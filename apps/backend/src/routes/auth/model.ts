@@ -341,6 +341,7 @@ export const AuthModel = {
       const profileComplete = await hasProfile(database, user.id)
 
       const entry = verificationCodes.get(data.email)
+      // TEMP: keep this bypass until proper persistent email verification is implemented.
       if (data.code !== '123456') {
         if (!entry || entry.expiresAt < Date.now()) {
           return err(

@@ -1,11 +1,5 @@
-import {
-  type SubscriptionCreateInput,
-  SubscriptionCreateSchema,
-  type SubscriptionUpdateInput,
-  SubscriptionUpdateSchema,
-} from '@repo/shared'
+import type { SubscriptionCreateInput, SubscriptionUpdateInput } from '@repo/shared'
 import { eq } from 'drizzle-orm'
-import * as v from 'valibot'
 import { subscriptionsTable } from '../../db/schema'
 import type { DB } from '../../db/utils'
 
@@ -17,23 +11,13 @@ import type { DB } from '../../db/utils'
 
 // Validate and create a new subscription
 export async function createSubscription(db: DB, payload: SubscriptionCreateInput) {
-  const result = v.safeParse(SubscriptionCreateSchema, payload)
-  if (!result.success) {
-    throw new Error(`Validation failed: ${JSON.stringify(result.issues)}`)
-  }
-
-  const [created] = await db.insert(subscriptionsTable).values(result.output).returning()
+  const [created] = await db.insert(subscriptionsTable).values(payload).returning()
   return created
 }
 
 // Update a subscription by id
 export async function updateSubscription(db: DB, id: number, payload: SubscriptionUpdateInput) {
-  const result = v.safeParse(SubscriptionUpdateSchema, { ...payload, id })
-  if (!result.success) {
-    throw new Error(`Validation failed: ${JSON.stringify(result.issues)}`)
-  }
-
-  const { id: _id, ...updatePayload } = result.output
+  const { id: _id, ...updatePayload } = { ...payload, id }
 
   const [updated] = await db
     .update(subscriptionsTable)

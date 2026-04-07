@@ -1,3 +1,8 @@
 - [ ] Make the backend serve the frontend html directly. No need for 2 servers.
     -  Also, this way, we can dal with session cookie stuff more sanely
 - [ ] Replace the demo SMTP/OTP flow with real email delivery and persistent verification tokens; make resend send a verification email/code instead of using forgot-password.
+    - Temporary note: `AuthModel.verify` still accepts the `123456` bypass until proper email verification is implemented.
+- [ ] Add route tests for likes, messages, and matches (60/69 route tests completed)
+    - likes route: POST with auth/access control
+    - messages route: GET/POST with match participant checks  
+    - matches route: GET with filtering, POST with match creation
