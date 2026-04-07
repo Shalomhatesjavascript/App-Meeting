@@ -1,24 +1,10 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Elysia } from 'elysia'
-import { AuthErrorCodeEnum } from '../../lib/auth-enums'
-import { createRouteError } from '../../lib/route-error'
 
-type RequestUser = { id: number; role: 'free' | 'premium' | 'admin'; email?: string }
-
-let requireUserImpl: (headers: Record<string, string | undefined>) => Promise<RequestUser> =
-  async () => ({
-    id: 1,
-    role: 'free',
-  })
 let getDiscoveryFeedImpl: (...args: unknown[]) => Promise<unknown[]> = async () => []
 let getRecommendationsImpl: (...args: unknown[]) => Promise<unknown[]> = async () => []
 let getPossibleMatchesImpl: (...args: unknown[]) => Promise<unknown[]> = async () => []
 const testDb = { test: true }
-
-mock.module('../../lib/request-auth', () => ({
-  requireAdmin: async () => ({ id: 999, role: 'admin' as const }),
-  requireUser: (headers: Record<string, string | undefined>) => requireUserImpl(headers),
-}))
 
 mock.module('../../db/utils', () => ({
   getDrizzleDb: () => testDb,
@@ -43,17 +29,12 @@ describe('Discovery Route Handlers', () => {
   })
 
   beforeEach(() => {
-    requireUserImpl = async () => ({ id: 1, role: 'free' })
     getDiscoveryFeedImpl = async () => []
     getRecommendationsImpl = async () => []
     getPossibleMatchesImpl = async () => []
   })
 
   it('requires authentication', async () => {
-    requireUserImpl = async () => {
-      throw createRouteError(AuthErrorCodeEnum.AUTHENTICATION_REQUIRED, 'Authentication required')
-    }
-
     const res = await app.fetch(new Request('http://localhost/discovery/candidates'))
     const body = (await res.json()) as { error?: string }
 
@@ -62,11 +43,6 @@ describe('Discovery Route Handlers', () => {
   })
 
   it('passes parsed pagination and clamps limit to 100', async () => {
-    requireUserImpl = async (headers) => ({
-      id: Number(headers['x-user-id'] || 1),
-      role: 'free',
-    })
-
     const calls: unknown[][] = []
     getDiscoveryFeedImpl = async (...args: unknown[]) => {
       calls.push(args)
@@ -77,6 +53,7 @@ describe('Discovery Route Handlers', () => {
       new Request('http://localhost/discovery/candidates?limit=500&offset=7', {
         headers: {
           'x-user-id': '42',
+          'x-user-role': 'free',
         },
       }),
     )
@@ -94,11 +71,6 @@ describe('Discovery Route Handlers', () => {
   })
 
   it('returns recommendations from the dedicated endpoint', async () => {
-    requireUserImpl = async (headers) => ({
-      id: Number(headers['x-user-id'] || 1),
-      role: 'free',
-    })
-
     const calls: unknown[][] = []
     getRecommendationsImpl = async (...args: unknown[]) => {
       calls.push(args)
@@ -107,7 +79,7 @@ describe('Discovery Route Handlers', () => {
 
     const res = await app.fetch(
       new Request('http://localhost/discovery/recommendations?limit=200&offset=3', {
-        headers: { 'x-user-id': '5' },
+        headers: { 'x-user-id': '5', 'x-user-role': 'free' },
       }),
     )
     const body = (await res.json()) as { data?: Array<Record<string, unknown>> }
@@ -124,11 +96,6 @@ describe('Discovery Route Handlers', () => {
   })
 
   it('returns possible matches and forwards minScore filter', async () => {
-    requireUserImpl = async (headers) => ({
-      id: Number(headers['x-user-id'] || 1),
-      role: 'free',
-    })
-
     const calls: unknown[][] = []
     getPossibleMatchesImpl = async (...args: unknown[]) => {
       calls.push(args)
@@ -137,7 +104,7 @@ describe('Discovery Route Handlers', () => {
 
     const res = await app.fetch(
       new Request('http://localhost/discovery/possible-matches?limit=40&offset=2&minScore=250', {
-        headers: { 'x-user-id': '12' },
+        headers: { 'x-user-id': '12', 'x-user-role': 'free' },
       }),
     )
     const body = (await res.json()) as { data?: Array<Record<string, unknown>> }
@@ -173,7 +140,7 @@ describe('Discovery Route Handlers', () => {
 
     const res = await app.fetch(
       new Request('http://localhost/discovery/candidates', {
-        headers: { 'x-user-id': '1' },
+        headers: { 'x-user-id': '1', 'x-user-role': 'free' },
       }),
     )
     const body = (await res.json()) as { data?: Array<Record<string, unknown>> }
@@ -188,5 +155,9 @@ describe('Discovery Route Handlers', () => {
       score: 280,
       userId: 11,
     })
+  })
+
+  afterAll(() => {
+    ;(mock as { restore?: () => void }).restore?.()
   })
 })

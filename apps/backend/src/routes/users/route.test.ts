@@ -1,10 +1,6 @@
-import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { AuthErrorCodeEnum } from '../../lib/auth-enums'
-import { createRouteError } from '../../lib/route-error'
-
-type RequestUser = { id: number; role: 'free' | 'premium' | 'admin'; email?: string }
 
 type SearchResult = {
   userId: number
@@ -36,19 +32,9 @@ const SearchResponseSchema = v.object({
   data: v.optional(v.array(SearchResultSchema)),
 })
 
-let requireUserImpl: (headers: Record<string, string | undefined>) => Promise<RequestUser> =
-  async () => ({
-    id: 1,
-    role: 'free',
-  })
 let searchUsersImpl: (...args: unknown[]) => Promise<SearchResult[]> = async () => []
 
 const testDb = { test: true }
-
-mock.module('../../lib/request-auth', () => ({
-  requireAdmin: async () => ({ id: 999, role: 'admin' as const }),
-  requireUser: (headers: Record<string, string | undefined>) => requireUserImpl(headers),
-}))
 
 mock.module('../../db/utils', () => ({
   getDrizzleDb: () => testDb,
@@ -98,15 +84,10 @@ describe('Users Route Search', () => {
   })
 
   beforeEach(() => {
-    requireUserImpl = async () => ({ id: 1, role: 'free' })
     searchUsersImpl = async () => []
   })
 
   it('requires authentication', async () => {
-    requireUserImpl = async () => {
-      throw createRouteError(AuthErrorCodeEnum.AUTHENTICATION_REQUIRED, 'Authentication required')
-    }
-
     const res = await app.fetch(new Request('http://localhost/users/search?q=ada'))
     const body = v.parse(ErrorResponseSchema, await res.json())
 
@@ -127,11 +108,6 @@ describe('Users Route Search', () => {
   })
 
   it('forwards query, limit, offset, and returns data', async () => {
-    requireUserImpl = async (headers) => ({
-      id: Number(headers['x-user-id'] || 1),
-      role: 'free',
-    })
-
     const calls: unknown[][] = []
     searchUsersImpl = async (...args: unknown[]) => {
       calls.push(args)
@@ -151,7 +127,7 @@ describe('Users Route Search', () => {
 
     const res = await app.fetch(
       new Request('http://localhost/users/search?q=ada&limit=500&offset=4', {
-        headers: { 'x-user-id': '3' },
+        headers: { 'x-user-id': '3', 'x-user-role': 'free' },
       }),
     )
     const body = v.parse(SearchResponseSchema, await res.json())
@@ -166,5 +142,9 @@ describe('Users Route Search', () => {
     expect(queryArg).toBe('ada')
     expect(limitArg).toBe(100)
     expect(offsetArg).toBe(4)
+  })
+
+  afterAll(() => {
+    ;(mock as { restore?: () => void }).restore?.()
   })
 })
