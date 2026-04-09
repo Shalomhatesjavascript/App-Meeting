@@ -1,4 +1,6 @@
-# Elysia with Bun runtime
+# Backend Service
+
+Shalom Social Media backend built with Elysia, Drizzle, and Cloudflare D1.
 
 ## First-time local setup (new contributors)
 
@@ -17,19 +19,28 @@ The backend will use your local Wrangler D1 state for runtime DB access.
 
 Temporary note: email verification still has a `123456` bypass in `AuthModel.verify` until real verification tokens are added.
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
-```bash
-bun create elysia ./elysia-example
-```
+## Core commands
 
-## Development
-To start the development server run:
-```bash
-bun run dev
-```
+- Start dev server: `bun run dev`
+- Typecheck: `bun run typecheck`
+- Run backend tests: `bun run test`
+- Recreate local DB and seed data: `bun run onboard`
 
-Open http://localhost:8787/ with your browser to see the result.
+## Auth model
+
+- Primary auth is Better Auth session cookies (HttpOnly).
+- Better Auth routes are mounted under `/api/better-auth/*`.
+- Legacy bearer token and `x-user-*` trust headers are not used for identity.
+
+## Validation conventions
+
+- Shared request contracts live in `@repo/shared` validation schemas.
+- Route handlers use strict integer parsing helpers for path/query IDs.
+- Invalid numeric/query payloads should return `400` with a clear `{ error: string }` body.
+- Ownership checks should use shared access-control helpers (`isSelfOrAdmin`) where applicable.
+- Route exceptions should be normalized through `toRouteError` for consistent error mapping.
+
+See `API_ROUTES.md` for frontend-facing endpoint details.
 
 ## D1 Notes (Important)
 

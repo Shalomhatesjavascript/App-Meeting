@@ -11,13 +11,11 @@ All listed routes below are relative to the backend base URL.
 
 ## Auth Model (Current)
 
-Most protected routes use header-based auth in `requireUser`/`requireAdmin`.
+Primary authentication uses Better Auth HttpOnly cookie sessions.
 
-Common headers used by the frontend during development:
-
-- `x-user-id`
-- `x-user-role`
-- `x-user-email`
+- Session endpoints live under `/api/better-auth/*`.
+- Frontend requests should include credentials/cookies.
+- Legacy Bearer token and custom `x-user-*` identity headers are no longer supported.
 
 Access levels in this document:
 
@@ -31,8 +29,17 @@ Access levels in this document:
 - Success payloads generally return either `{ data: ... }` or `{ success: true }`.
 - Validation/auth/not-found errors generally return `{ error: string }`.
 
----
 
+## Validation and Parsing Conventions
+
+- Path IDs and numeric query values are parsed as strict integers.
+- Invalid numeric formats (floats, negative values for non-negative fields, non-numeric strings) return `400`.
+- Some routes clamp validated values for safety while preserving compatibility:
+	- Discovery and user-search `limit` are clamped to `<= 100`.
+	- Discovery/user-search `offset` and `minScore` are clamped to `>= 0`.
+- Date/time fields use ISO-compatible strings. Subscriptions accept ISO date (`YYYY-MM-DD`) and ISO date-time values.
+
+---
 ## Health
 
 | Method | Path | Access | Notes |
@@ -43,12 +50,20 @@ Access levels in this document:
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| POST | `/auth/register` | Public | `RegisterSchema` | Creates user + verification flow |
-| POST | `/auth/login` | Public | `LoginSchema` | Returns auth data/token payload |
-| POST | `/auth/logout` | Public | none | Returns `{ success: true }` |
-| POST | `/auth/verify` | Public | `VerifySchema` | Verifies email/code |
-| POST | `/auth/forgot-password` | Public | `ForgotPasswordSchema` | Starts reset flow |
-| POST | `/auth/reset-password` | Public | `ResetPasswordSchema` | Completes reset flow |
+| POST | `/auth/register` | Public | `RegisterSchema` | Compatibility endpoint. Prefer Better Auth sign-up routes. |
+| POST | `/auth/login` | Public | `LoginSchema` | Compatibility endpoint. Prefer Better Auth sign-in routes. |
+| POST | `/auth/logout` | Public | none | Compatibility endpoint. Prefer Better Auth sign-out routes. |
+
+## Better Auth (`/api/better-auth`)
+
+These are managed by Better Auth and should be consumed via the Better Auth client.
+
+| Method | Path | Access | Body / Query | Notes |
+|---|---|---|---|---|
+| POST | `/api/better-auth/sign-in/email` | Public | Better Auth payload | Creates session cookie on success |
+| POST | `/api/better-auth/sign-up/email` | Public | Better Auth payload | Creates account and session cookie |
+| POST | `/api/better-auth/sign-out` | User | none | Clears session cookie |
+| GET | `/api/better-auth/get-session` | User | none | Returns current session/user |
 
 ## Users (`/users`)
 
@@ -113,7 +128,7 @@ Access levels in this document:
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/messages/:match_id` | User/Admin (participant) | `match_id` path, `before_id`/`limit` query | Paginated match messages |
+| GET | `/messages/:match_id` | User/Admin (participant) | `match_id` path, `before_id`/`limit` query | Paginated match messages (positive integer query values) |
 | POST | `/messages` | User/Admin (owner) | `MessageCreateSchema` | Send message |
 | POST | `/messages/:id/read` | User | `id` path param | Mark message as read |
 
@@ -134,9 +149,9 @@ All discovery routes are server-scored and sorted (highest score first).
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/discovery/recommendations` | User | `limit`, `offset` | Main recommendations feed |
-| GET | `/discovery/possible-matches` | User | `limit`, `offset`, `minScore` | Filters recommendations by minimum score |
-| GET | `/discovery/candidates` | User | `limit`, `offset` | Legacy/discover feed alias |
+| GET | `/discovery/recommendations` | User | `limit`, `offset` | Main recommendations feed (`limit` max 100) |
+| GET | `/discovery/possible-matches` | User | `limit`, `offset`, `minScore` | Filters recommendations by minimum score (`limit` max 100) |
+| GET | `/discovery/candidates` | User | `limit`, `offset` | Legacy/discover feed alias (`limit` max 100) |
 
 ## Admin Logs (`/admin-logs`)
 
