@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { getCurrentUser, logoutUser, updateStoredUser } from '../api/auth'
+import { clearStoredSession, getCurrentUser, logoutUser, updateStoredUser } from '../api/auth'
+import { authClient } from '../lib/auth-client'
 
 const AuthContext = createContext(null)
 
@@ -8,9 +9,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const stored = getCurrentUser()
-    setUser(stored)
-    setLoading(false)
+    let mounted = true
+
+    const bootstrap = async () => {
+      const stored = getCurrentUser()
+      const session = await authClient.getSession()
+      const hasSession = Boolean(session?.data?.session)
+
+      if (!mounted) return
+
+      if (!hasSession) {
+        clearStoredSession()
+        setUser(null)
+      } else {
+        setUser(stored)
+      }
+
+      setLoading(false)
+    }
+
+    bootstrap()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const login = useCallback((userData) => {

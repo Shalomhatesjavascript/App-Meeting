@@ -1,8 +1,6 @@
-import api from '../server/eden-treaty'
+import { authClient } from '../lib/auth-client'
 
 const STORAGE_KEY_USER = 'bu_connect_user'
-const STORAGE_KEY_VERIFIED = 'bu_connect_verified'
-const STORAGE_KEY_TOKEN = 'bu_connect_token'
 
 function normalizeUserId(id) {
   if (typeof id === 'number' && Number.isFinite(id)) return id
@@ -37,7 +35,7 @@ function normalizeUser(user, fallback = {}) {
     email: user?.email ?? fallback.email ?? '',
     id,
     isPremium: role === 'premium' || role === 'admin',
-    isVerified: Boolean(user?.isVerified ?? fallback.isVerified),
+    isVerified: Boolean(user?.isVerified ?? user?.emailVerified ?? fallback.isVerified ?? true),
     name: fallback.name || toDisplayName(user?.email ?? fallback.email ?? '', fallback.name),
     profile: fallback.profile ?? null,
     profileComplete: Boolean(fallback.profileComplete ?? user?.profileComplete),
@@ -45,91 +43,56 @@ function normalizeUser(user, fallback = {}) {
   }
 }
 
-function saveSession({ token, user }) {
-  if (token) localStorage.setItem(STORAGE_KEY_TOKEN, token)
+function saveSession({ user }) {
   localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user))
-  if (user.isVerified) localStorage.setItem(STORAGE_KEY_VERIFIED, 'true')
-}
-
-function getStoredToken() {
-  return localStorage.getItem(STORAGE_KEY_TOKEN) || ''
 }
 
 export function getAuthHeaders() {
-  const user = getCurrentUser()
-  const token = getStoredToken()
-  if (!user && !token) return {}
-  return {
-    ...(token ? { authorization: `Bearer ${token}` } : {}),
-    ...(user?.id ? { 'x-user-id': String(user.id) } : {}),
-    ...(user?.role ? { 'x-user-role': String(user.role) } : {}),
-    ...(user?.email ? { 'x-user-email': String(user.email) } : {}),
-  }
+  // Auth should be derived from Better Auth HttpOnly session cookies.
+  // Keep this helper for call-site compatibility during migration.
+  return {}
+}
+
+async function getBetterAuthSessionUser() {
+  const result = await authClient.getSession()
+  return result?.data?.user || null
 }
 
 export async function registerUser({ name, email, password }) {
-  const { data, error } = await api.auth.register.post({
-    confirmPassword: password,
+  const { data, error } = await authClient.signUp.email({
     email,
+    name,
     password,
   })
 
   if (error) {
-    throw new Error(error.value?.error || 'Registration failed')
+    throw new Error(error.message || 'Registration failed')
   }
 
-  const payload = data?.data || data || {}
-  const user = normalizeUser(payload.user, {
+  const sessionUser = data?.user || (await getBetterAuthSessionUser())
+  const user = normalizeUser(sessionUser, {
     email,
-    isVerified: false,
+    isVerified: true,
     name,
     profileComplete: false,
   })
-  saveSession({ token: '', user })
-  return { user, verificationCode: payload.verificationCode }
-}
-
-export async function verifyEmail({ email, code }) {
-  const { data, error } = await api.auth.verify.post({ code, email })
-  if (error) {
-    throw new Error(error.value?.error || 'Verification failed')
-  }
-
-  const payload = data?.data || data || {}
-  const user =
-    (payload.user && normalizeUser(payload.user, payload.user)) ||
-    updateStoredUser({ email, isVerified: true }) ||
-    normalizeUser({ email, isVerified: true })
-  saveSession({ token: payload.token || getStoredToken(), user })
-
-  return { result: payload, user }
-}
-
-export async function resendVerificationEmail({ email }) {
-  const { data, error } = await api.auth['forgot-password'].post({ email })
-  if (error) {
-    throw new Error(error.value?.error || 'Failed to resend code')
-  }
-  const payload = data?.data || data || {}
-  return {
-    message: 'Verification code resent.',
-    verificationCode: payload.verificationCode || null,
-  }
+  saveSession({ user })
+  return { user }
 }
 
 export async function loginUser({ email, password }) {
-  const { data, error } = await api.auth.login.post({ email, password })
+  const { data, error } = await authClient.signIn.email({ email, password })
   if (error) {
-    throw new Error(error.value?.error || 'Invalid email or password.')
+    throw new Error(error.message || 'Invalid email or password.')
   }
 
-  const payload = data?.data || data || {}
-  const user = normalizeUser(payload.user, {
+  const sessionUser = data?.user || (await getBetterAuthSessionUser())
+  const user = normalizeUser(sessionUser, {
     email,
     profileComplete: getCurrentUser()?.profileComplete,
   })
-  saveSession({ token: payload.token || '', user })
-  return { token: payload.token, user }
+  saveSession({ user })
+  return { user }
 }
 
 export function getCurrentUser() {
@@ -145,11 +108,13 @@ export function getCurrentUser() {
 }
 
 export async function logoutUser() {
-  await api.auth.logout.post({}, { headers: getAuthHeaders() })
-  localStorage.removeItem(STORAGE_KEY_TOKEN)
+  await authClient.signOut()
   localStorage.removeItem(STORAGE_KEY_USER)
-  localStorage.removeItem(STORAGE_KEY_VERIFIED)
   return { success: true }
+}
+
+export function clearStoredSession() {
+  localStorage.removeItem(STORAGE_KEY_USER)
 }
 
 export function updateStoredUser(updates) {

@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { MatchModal } from './components/MatchModal'
-import { RequireAuth, RequireGuest, RequireVerified } from './components/RouteGuards'
+import { RequireGuest, RequireVerified } from './components/RouteGuards'
 import { Toast } from './components/ui/Toast'
 import { AppProvider } from './context/AppContext'
 import { AuthProvider } from './context/AuthContext'
@@ -10,7 +10,6 @@ import MessagesPage from './pages/app/MessagesPage'
 import ProfilePage from './pages/app/ProfilePage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
-import VerifyEmailPage from './pages/auth/VerifyEmailPage'
 import SetupProfilePage from './pages/onboarding/SetupProfilePage'
 
 export default function App() {
@@ -39,14 +38,7 @@ export default function App() {
                 path="/register"
               />
 
-              <Route
-                element={
-                  <RequireAuth>
-                    <VerifyEmailPage />
-                  </RequireAuth>
-                }
-                path="/verify-email"
-              />
+              <Route element={<Navigate replace to="/setup-profile" />} path="/verify-email" />
 
               <Route
                 element={

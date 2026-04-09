@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
-import { setRuntimeEnv } from './lib/runtime-env'
+import { auth } from './lib/better-auth'
+import { getRuntimeString, setRuntimeEnv } from './lib/runtime-env'
 import adminLogsRoutes from './routes/admin-logs/route'
 import authRoutes from './routes/auth/route'
 import discoveryRoutes from './routes/discovery/route'
@@ -14,10 +15,13 @@ import userInterestsRoutes from './routes/user-interests/route'
 import usersRoutes from './routes/users/route'
 
 function buildCorsHeaders(origin: string | null): Record<string, string> {
+  const resolvedOrigin = origin || getRuntimeString('FRONTEND_URL') || '*'
+
   return {
-    'access-control-allow-headers': 'content-type,authorization,x-user-id,x-user-role,x-user-email',
+    'access-control-allow-credentials': resolvedOrigin === '*' ? 'false' : 'true',
+    'access-control-allow-headers': 'content-type,authorization,cookie',
     'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'access-control-allow-origin': origin || '*',
+    'access-control-allow-origin': resolvedOrigin,
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -38,6 +42,7 @@ const app = new Elysia({ adapter: CloudflareAdapter })
     }
   })
   .get('/health', ({ status }) => status(200))
+  .all('/api/better-auth/*', ({ request }) => auth.handler(request))
   .use(authRoutes)
   .use(usersRoutes)
   .use(profilesRoutes)

@@ -17,7 +17,7 @@ export function RequireAuth({ children }) {
 }
 
 export function RequireVerified({ children }) {
-  const { isAuthenticated, isVerified, loading } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
   const location = useLocation()
 
   if (loading) return <PageLoader />
@@ -26,20 +26,15 @@ export function RequireVerified({ children }) {
     return <Navigate replace state={{ from: location }} to="/login" />
   }
 
-  if (!isVerified) {
-    return <Navigate replace to="/verify-email" />
-  }
-
   return children
 }
 
 export function RequireGuest({ children }) {
-  const { isAuthenticated, isVerified, isProfileComplete, loading } = useAuth()
+  const { isAuthenticated, isProfileComplete, loading } = useAuth()
 
   if (loading) return <PageLoader />
 
   if (isAuthenticated) {
-    if (!isVerified) return <Navigate replace to="/verify-email" />
     if (!isProfileComplete) return <Navigate replace to="/setup-profile" />
     return <Navigate replace to="/app/discover" />
   }

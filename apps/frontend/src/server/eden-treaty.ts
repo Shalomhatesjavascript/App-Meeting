@@ -6,6 +6,10 @@ import { frontendEnv } from '../env'
  *
  * All your api calls to the backend must be called via this
  */
-const api = treaty<ElysiaApp>(frontendEnv.VITE_BACKEND_URL)
+const api = treaty<ElysiaApp>(frontendEnv.VITE_BACKEND_URL, {
+  fetch: {
+    credentials: 'include',
+  },
+})
 
 export default api

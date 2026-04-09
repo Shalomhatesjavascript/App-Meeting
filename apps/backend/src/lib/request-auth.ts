@@ -1,11 +1,8 @@
 import { eq } from 'drizzle-orm'
-import * as v from 'valibot'
-
 import { usersTable } from '../db/schema'
 import { getDrizzleDb } from '../db/utils'
-
-import { AuthErrorCodeEnum, type AuthRole, AuthRoleEnum, AuthRoleSchema } from './auth-enums'
-import { verifyAuthToken } from './auth-token'
+import { AuthErrorCodeEnum, type AuthRole, AuthRoleEnum } from './auth-enums'
+import { auth } from './better-auth'
 import { createRouteError } from './route-error'
 
 export type RequestUser = {
@@ -14,21 +11,82 @@ export type RequestUser = {
   email?: string
 }
 
-async function parseToken(authorization?: string): Promise<RequestUser | null> {
-  if (!authorization || !authorization.startsWith('Bearer ')) {
+function parseTestHeaders(headers: Record<string, string | undefined>): RequestUser | null {
+  if (process.env.NODE_ENV !== 'test') {
     return null
   }
 
+  const userId = Number(headers['x-user-id'])
+  if (!Number.isFinite(userId)) {
+    return null
+  }
+
+  const roleHeader = headers['x-user-role']
+  const roleCandidate =
+    typeof roleHeader === 'string' && AuthRoleEnum.$.isValue(roleHeader)
+      ? roleHeader
+      : AuthRoleEnum.free
+
+  return {
+    email: headers['x-user-email'],
+    id: userId,
+    role: roleCandidate,
+  }
+}
+
+function toHeadersObject(headers: Record<string, string | undefined>): Headers {
+  const normalized = new Headers()
+  for (const [key, value] of Object.entries(headers)) {
+    if (value !== undefined) {
+      normalized.set(key, value)
+    }
+  }
+
+  return normalized
+}
+
+async function parseBetterAuthSession(
+  headers: Record<string, string | undefined>,
+): Promise<RequestUser | null> {
   try {
-    const parsed = await verifyAuthToken(authorization.slice('Bearer '.length))
-    if (!parsed || typeof parsed.userId !== 'number' || !parsed.role) {
+    const session = await auth.api.getSession({
+      headers: toHeadersObject(headers),
+    })
+
+    if (!session?.user) {
       return null
     }
 
+    const sessionEmail = session.user.email
+    if (!sessionEmail) {
+      return null
+    }
+
+    const db = getDrizzleDb()
+    const appUser = await db
+      .select({
+        email: usersTable.email,
+        id: usersTable.id,
+        role: usersTable.role,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.email, sessionEmail))
+      .get()
+
+    if (!appUser) {
+      return null
+    }
+
+    const roleValue = appUser.role
+    const roleCandidate =
+      typeof roleValue === 'string' && AuthRoleEnum.$.isValue(roleValue)
+        ? roleValue
+        : AuthRoleEnum.free
+
     return {
-      email: parsed.email,
-      id: parsed.userId,
-      role: parsed.role,
+      email: appUser.email,
+      id: appUser.id,
+      role: roleCandidate,
     }
   } catch {
     return null
@@ -38,56 +96,17 @@ async function parseToken(authorization?: string): Promise<RequestUser | null> {
 export async function getRequestUser(
   headers: Record<string, string | undefined>,
 ): Promise<RequestUser | null> {
-  const fromToken = await parseToken(headers.authorization)
-  if (fromToken) {
-    return fromToken
+  const fromTestHeaders = parseTestHeaders(headers)
+  if (fromTestHeaders) {
+    return fromTestHeaders
   }
 
-  const idValue = headers['x-user-id']
-  if (!idValue) {
-    const emailValue = headers['x-user-email']
-    if (!emailValue) {
-      return null
-    }
-
-    const db = getDrizzleDb()
-    const user = await db.select().from(usersTable).where(eq(usersTable.email, emailValue)).get()
-    if (!user) {
-      return null
-    }
-
-    return {
-      email: user.email,
-      id: user.id,
-      role: user.role === 'admin' || user.role === 'premium' ? user.role : AuthRoleEnum.free,
-    }
+  const fromSession = await parseBetterAuthSession(headers)
+  if (fromSession) {
+    return fromSession
   }
 
-  const id = Number(idValue)
-  if (!Number.isFinite(id)) {
-    const emailValue = headers['x-user-email']
-    if (!emailValue) {
-      return null
-    }
-
-    const db = getDrizzleDb()
-    const user = await db.select().from(usersTable).where(eq(usersTable.email, emailValue)).get()
-    if (!user) {
-      return null
-    }
-
-    return {
-      email: user.email,
-      id: user.id,
-      role: user.role === 'admin' || user.role === 'premium' ? user.role : AuthRoleEnum.free,
-    }
-  }
-
-  const roleHeader = headers['x-user-role']
-  const parsedRole = v.safeParse(AuthRoleSchema, roleHeader)
-  const role = parsedRole.success ? parsedRole.output : AuthRoleEnum.free
-
-  return { email: headers['x-user-email'], id, role }
+  return null
 }
 
 export async function requireUser(

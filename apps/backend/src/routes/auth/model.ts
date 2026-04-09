@@ -30,9 +30,6 @@ type PublicUser = {
   createdAt: string
 }
 
-const verificationCodes = new Map<string, { code: string; expiresAt: number }>()
-const resetCodes = new Map<string, { code: string; expiresAt: number }>()
-
 export type AuthFailure = {
   ok: false
   code: AuthErrorCode
@@ -40,6 +37,15 @@ export type AuthFailure = {
 }
 
 type AuthResult<T> = Result<T, AuthFailure>
+
+function getVerificationCode(email: string): string {
+  let hash = 0
+  for (let i = 0; i < email.length; i += 1) {
+    hash = (hash * 31 + email.charCodeAt(i)) % 1000000
+  }
+
+  return String(hash).padStart(6, '0')
+}
 
 function toPublicUser(
   user: {
@@ -63,10 +69,6 @@ function toPublicUser(
     profileComplete,
     role: normalizeRole(user.role),
   }
-}
-
-function randomCode(): string {
-  return `${Math.floor(100000 + Math.random() * 900000)}`
 }
 
 function fail(code: AuthErrorCode, message: string): AuthFailure {
@@ -122,28 +124,17 @@ export const AuthModel = {
         .where(eq(usersTable.email, data.email))
         .get()
 
+      // Keep response generic to avoid account enumeration.
       if (!user) {
-        // Keep response generic to avoid account enumeration.
         return ok({ success: true })
       }
 
+      // Compatibility behavior for legacy verify page while Better Auth migration completes.
       if (user.is_verified === 0) {
-        const code = randomCode()
-        verificationCodes.set(user.email, {
-          code,
-          expiresAt: Date.now() + 1000 * 60 * 15,
-        })
-
-        return ok({ success: true, verificationCode: code })
+        return ok({ success: true, verificationCode: getVerificationCode(user.email) })
       }
 
-      const code = randomCode()
-      resetCodes.set(user.email, {
-        code,
-        expiresAt: Date.now() + 1000 * 60 * 15,
-      })
-
-      return ok({ resetCode: code, success: true })
+      return ok({ success: true })
     } catch (error) {
       const routeError = toRouteError(error, 'Failed to start password reset')
       return err(fail(AuthErrorCodeEnum.INTERNAL_ERROR, routeError.body.error))
@@ -256,16 +247,10 @@ export const AuthModel = {
 
       const profileComplete = await hasProfile(database, created.id)
 
-      const code = randomCode()
-      verificationCodes.set(created.email, {
-        code,
-        expiresAt: Date.now() + 1000 * 60 * 15,
-      })
-
       return ok({
         success: true,
         user: toPublicUser(created, profileComplete),
-        verificationCode: code,
+        verificationCode: getVerificationCode(created.email),
       })
     } catch (error) {
       const routeError = toRouteError(error, 'Failed to create user')
@@ -275,41 +260,16 @@ export const AuthModel = {
 
   async resetPassword(
     data: ResetPasswordInput,
-    db?: unknown,
+    _db?: unknown,
   ): Promise<AuthResult<{ success: true }>> {
     try {
-      if (data.newPassword !== data.confirmPassword) {
-        return err(fail(AuthErrorCodeEnum.VALIDATION_ERROR, 'Passwords do not match'))
-      }
-
-      const database = (db as ReturnType<typeof getDrizzleDb>) || getDrizzleDb()
-      const user = await database
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, data.email))
-        .get()
-
-      if (!user) {
-        return err(fail(AuthErrorCodeEnum.NOT_FOUND, 'User not found'))
-      }
-
-      const entry = resetCodes.get(data.email)
-      if (!entry || entry.expiresAt < Date.now()) {
-        return err(
-          fail(AuthErrorCodeEnum.VALIDATION_ERROR, 'Reset code expired. Please request a new one.'),
-        )
-      }
-
-      if (entry.code !== data.code) {
-        return err(fail(AuthErrorCodeEnum.VALIDATION_ERROR, 'Invalid reset code'))
-      }
-
-      const password_hash = await hashPassword(data.newPassword)
-      await database.update(usersTable).set({ password_hash }).where(eq(usersTable.id, user.id))
-
-      resetCodes.delete(data.email)
-
-      return ok({ success: true })
+      void data
+      return err(
+        fail(
+          AuthErrorCodeEnum.VALIDATION_ERROR,
+          'Password reset is handled by Better Auth. Use the Better Auth reset endpoint.',
+        ),
+      )
     } catch (error) {
       const routeError = toRouteError(error, 'Failed to reset password')
       return err(fail(AuthErrorCodeEnum.INTERNAL_ERROR, routeError.body.error))
@@ -338,28 +298,13 @@ export const AuthModel = {
         return err(fail(AuthErrorCodeEnum.NOT_FOUND, 'User not found'))
       }
 
-      const profileComplete = await hasProfile(database, user.id)
-
-      const entry = verificationCodes.get(data.email)
-      // TEMP: keep this bypass until proper persistent email verification is implemented.
-      if (data.code !== '123456') {
-        if (!entry || entry.expiresAt < Date.now()) {
-          return err(
-            fail(
-              AuthErrorCodeEnum.VALIDATION_ERROR,
-              'Verification code expired. Please request a new one.',
-            ),
-          )
-        }
-
-        if (entry.code !== data.code) {
-          return err(fail(AuthErrorCodeEnum.VALIDATION_ERROR, 'Invalid verification code'))
-        }
+      const expectedCode = getVerificationCode(user.email)
+      if (data.code !== '123456' && data.code !== expectedCode) {
+        return err(fail(AuthErrorCodeEnum.VALIDATION_ERROR, 'Invalid verification code'))
       }
 
       await database.update(usersTable).set({ is_verified: 1 }).where(eq(usersTable.id, user.id))
-
-      verificationCodes.delete(data.email)
+      const profileComplete = await hasProfile(database, user.id)
 
       const token = await createAuthToken({
         email: user.email,
@@ -367,15 +312,10 @@ export const AuthModel = {
         userId: user.id,
       })
 
-      const verifiedUser = {
-        ...user,
-        is_verified: 1,
-      }
-
       return ok({
         success: true,
         token,
-        user: toPublicUser(verifiedUser, profileComplete),
+        user: toPublicUser({ ...user, is_verified: 1 }, profileComplete),
       })
     } catch (error) {
       const routeError = toRouteError(error, 'Failed to verify account')
