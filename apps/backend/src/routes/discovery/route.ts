@@ -6,6 +6,7 @@ import {
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
+import { parseNonNegativeInt, parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -18,12 +19,18 @@ const discoveryRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
       const requester = await requireUser(headers)
       const db = getDrizzleDb()
 
-      const limitNum = query?.limit ? Number(query.limit) : undefined
-      const offsetNum = query?.offset ? Number(query.offset) : undefined
+      const parsedLimit = query?.limit ? parsePositiveInt(query.limit) : null
+      const parsedOffset = query?.offset ? parseNonNegativeInt(query.offset) : null
+      if (parsedLimit && !parsedLimit.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedOffset && !parsedOffset.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
 
       const parsed = v.safeParse(DiscoveryRecommendationsQuerySchema, {
-        limit: Number.isFinite(limitNum) ? limitNum : undefined,
-        offset: Number.isFinite(offsetNum) ? offsetNum : undefined,
+        limit: parsedLimit?.success ? parsedLimit.value : undefined,
+        offset: parsedOffset?.success ? parsedOffset.value : undefined,
       })
 
       if (!parsed.success) {
@@ -47,14 +54,23 @@ const discoveryRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
       const requester = await requireUser(headers)
       const db = getDrizzleDb()
 
-      const limitNum = query?.limit ? Number(query.limit) : undefined
-      const offsetNum = query?.offset ? Number(query.offset) : undefined
-      const minScoreNum = query?.minScore ? Number(query.minScore) : undefined
+      const parsedLimit = query?.limit ? parsePositiveInt(query.limit) : null
+      const parsedOffset = query?.offset ? parseNonNegativeInt(query.offset) : null
+      const parsedMinScore = query?.minScore ? parseNonNegativeInt(query.minScore) : null
+      if (parsedLimit && !parsedLimit.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedOffset && !parsedOffset.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedMinScore && !parsedMinScore.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
 
       const parsed = v.safeParse(DiscoveryPossibleMatchesQuerySchema, {
-        limit: Number.isFinite(limitNum) ? limitNum : undefined,
-        minScore: Number.isFinite(minScoreNum) ? minScoreNum : undefined,
-        offset: Number.isFinite(offsetNum) ? offsetNum : undefined,
+        limit: parsedLimit?.success ? parsedLimit.value : undefined,
+        minScore: parsedMinScore?.success ? parsedMinScore.value : undefined,
+        offset: parsedOffset?.success ? parsedOffset.value : undefined,
       })
 
       if (!parsed.success) {
@@ -79,12 +95,18 @@ const discoveryRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
       const requester = await requireUser(headers)
       const db = getDrizzleDb()
 
-      const limitNum = query?.limit ? Number(query.limit) : undefined
-      const offsetNum = query?.offset ? Number(query.offset) : undefined
+      const parsedLimit = query?.limit ? parsePositiveInt(query.limit) : null
+      const parsedOffset = query?.offset ? parseNonNegativeInt(query.offset) : null
+      if (parsedLimit && !parsedLimit.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedOffset && !parsedOffset.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
 
       const parsed = v.safeParse(DiscoveryCandidatesQuerySchema, {
-        limit: Number.isFinite(limitNum) ? limitNum : undefined,
-        offset: Number.isFinite(offsetNum) ? offsetNum : undefined,
+        limit: parsedLimit?.success ? parsedLimit.value : undefined,
+        offset: parsedOffset?.success ? parsedOffset.value : undefined,
       })
 
       if (!parsed.success) {

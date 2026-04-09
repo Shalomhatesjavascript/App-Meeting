@@ -3,6 +3,7 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireAdmin } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -33,13 +34,13 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
     '/:id',
     async ({ params, status }) => {
       try {
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid interest id' })
         }
 
         const db = getDrizzleDb()
-        const interest = await getInterestById(db, id)
+        const interest = await getInterestById(db, parsed.value)
         if (!interest) {
           return status(404, { error: 'Interest not found' })
         }
@@ -78,12 +79,12 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
     async ({ params, body, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid interest id' })
         }
         const db = getDrizzleDb()
-        const updated = await updateInterest(db, { ...body, id })
+        const updated = await updateInterest(db, { ...body, id: parsed.value })
         if (!updated) {
           return status(404, { error: 'Interest not found' })
         }
@@ -103,12 +104,12 @@ const interestsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
     async ({ params, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid interest id' })
         }
         const db = getDrizzleDb()
-        await deleteInterest(db, id)
+        await deleteInterest(db, parsed.value)
         return { success: true }
       } catch (error) {
         const routeError = toRouteError(error, 'Failed to delete interest')

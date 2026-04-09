@@ -2,6 +2,8 @@ import { LikeCreateSchema, LikeIdSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -14,7 +16,7 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
     async ({ body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        if (requester.role !== 'admin' && requester.id !== body.from_user_id) {
+        if (!isSelfOrAdmin(requester, body.from_user_id)) {
           return status(403, { error: 'Access denied' })
         }
 
@@ -34,11 +36,13 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
   .get('/mutual', async ({ query, headers, status }) => {
     try {
       const requester = await requireUser(headers)
-      const requestedUser = query.user_id ? Number(query.user_id) : requester.id
-      if (!Number.isFinite(requestedUser)) {
+      const parsedRequestedUser = query.user_id ? parsePositiveInt(query.user_id) : null
+      if (parsedRequestedUser && !parsedRequestedUser.success) {
         return status(400, { error: 'Invalid user id' })
       }
-      if (requester.role !== 'admin' && requester.id !== requestedUser) {
+      const requestedUser = parsedRequestedUser?.success ? parsedRequestedUser.value : requester.id
+
+      if (!isSelfOrAdmin(requester, requestedUser)) {
         return status(403, { error: 'Access denied' })
       }
       const db = getDrizzleDb()
@@ -57,7 +61,12 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
     async ({ params, headers, status }) => {
       try {
         await requireUser(headers)
-        const parsed = v.safeParse(LikeIdSchema, { id: Number(params.id) })
+        const parsedId = parsePositiveInt(params.id)
+        if (!parsedId.success) {
+          return status(400, { error: 'Invalid like id' })
+        }
+
+        const parsed = v.safeParse(LikeIdSchema, { id: parsedId.value })
         if (!parsed.success) {
           return status(400, { error: 'Invalid like id' })
         }
@@ -80,13 +89,15 @@ const likesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.lik
   .get('/', async ({ query, headers, status }) => {
     try {
       const requester = await requireUser(headers)
-      const requestedUser = query.user_id ? Number(query.user_id) : requester.id
-      const type = query.type === 'received' ? 'received' : 'sent'
-
-      if (!Number.isFinite(requestedUser)) {
+      const parsedRequestedUser = query.user_id ? parsePositiveInt(query.user_id) : null
+      if (parsedRequestedUser && !parsedRequestedUser.success) {
         return status(400, { error: 'Invalid user id' })
       }
-      if (requester.role !== 'admin' && requester.id !== requestedUser) {
+
+      const requestedUser = parsedRequestedUser?.success ? parsedRequestedUser.value : requester.id
+      const type = query.type === 'received' ? 'received' : 'sent'
+
+      if (!isSelfOrAdmin(requester, requestedUser)) {
         return status(403, { error: 'Access denied' })
       }
 

@@ -31,6 +31,22 @@ describe('AdminLogCreateSchema', () => {
     })
     expect(result.success).toBe(false)
   })
+
+  it('rejects invalid timestamp format', () => {
+    const result = v.safeParse(AdminLogCreateSchema, {
+      ...validCreate,
+      timestamp: 'invalid-date',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-positive admin id', () => {
+    const result = v.safeParse(AdminLogCreateSchema, {
+      ...validCreate,
+      admin_id: 0,
+    })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('AdminLogUpdateSchema', () => {

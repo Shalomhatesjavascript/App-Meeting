@@ -1,15 +1,18 @@
+import { PositiveIntSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
 import { addUserInterest, getUserInterestsWithNames, removeUserInterest } from './model'
 
 const UserInterestBodySchema = v.object({
-  interest_id: v.number(),
-  user_id: v.number(),
+  interest_id: PositiveIntSchema,
+  user_id: PositiveIntSchema,
 })
 
 const userInterestsRoutes = new Elysia({
@@ -20,12 +23,12 @@ const userInterestsRoutes = new Elysia({
     '/:userId',
     async ({ params, status }) => {
       try {
-        const userId = Number(params.userId)
-        if (!Number.isFinite(userId)) {
+        const parsed = parsePositiveInt(params.userId)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
         const db = getDrizzleDb()
-        const interests = await getUserInterestsWithNames(db, userId)
+        const interests = await getUserInterestsWithNames(db, parsed.value)
         return {
           data: interests,
         }
@@ -42,7 +45,7 @@ const userInterestsRoutes = new Elysia({
     async ({ body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        if (requester.role !== 'admin' && requester.id !== body.user_id) {
+        if (!isSelfOrAdmin(requester, body.user_id)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()
@@ -63,7 +66,7 @@ const userInterestsRoutes = new Elysia({
     async ({ body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        if (requester.role !== 'admin' && requester.id !== body.user_id) {
+        if (!isSelfOrAdmin(requester, body.user_id)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()

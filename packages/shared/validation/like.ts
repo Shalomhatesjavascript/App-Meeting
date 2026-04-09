@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { PositiveIntSchema } from './common'
 
 /**
  * Schema for creating a like or pass action.
@@ -7,9 +8,9 @@ import * as v from 'valibot'
  * - is_like: true for like, false for pass
  */
 export const LikeCreateSchema = v.object({
-  from_user_id: v.number(),
-  to_user_id: v.number(),
+  from_user_id: PositiveIntSchema,
   is_like: v.boolean(),
+  to_user_id: PositiveIntSchema,
 })
 export type LikeCreateInput = v.InferInput<typeof LikeCreateSchema>
 export type LikeCreateOutput = v.InferOutput<typeof LikeCreateSchema>
@@ -18,7 +19,7 @@ export type LikeCreateOutput = v.InferOutput<typeof LikeCreateSchema>
  * Schema for querying a like by ID.
  */
 export const LikeIdSchema = v.object({
-  id: v.number(),
+  id: PositiveIntSchema,
 })
 export type LikeIdInput = v.InferInput<typeof LikeIdSchema>
 export type LikeIdOutput = v.InferOutput<typeof LikeIdSchema>

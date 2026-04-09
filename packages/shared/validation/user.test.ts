@@ -6,7 +6,7 @@ import { UserAdminActionSchema, UserCreateSchema, UserUpdateSchema } from './use
 test('UserCreateSchema: valid input', () => {
   const input = {
     email: 'john@student.babcock.edu.ng',
-    password: 'supersecret123',
+    password: 'Supersecret123',
     role: 'free',
   }
   const result = v.safeParse(UserCreateSchema, input)
@@ -16,7 +16,7 @@ test('UserCreateSchema: valid input', () => {
 test('UserCreateSchema: invalid email', () => {
   const input = {
     email: 'john@gmail.com',
-    password: 'supersecret123',
+    password: 'Supersecret123',
     role: 'free',
   }
   const result = v.safeParse(UserCreateSchema, input)
@@ -38,9 +38,18 @@ test('UserUpdateSchema: partial update', () => {
   const input = {
     email: 'jane@babcock.edu.ng',
     is_verified: 1,
+    last_login_at: '2026-04-09T09:10:11.000Z',
   }
   const result = v.safeParse(UserUpdateSchema, input)
   expect(result.success).toBe(true)
+})
+
+test('UserUpdateSchema: invalid last_login_at', () => {
+  const input = {
+    last_login_at: 'not-a-timestamp',
+  }
+  const result = v.safeParse(UserUpdateSchema, input)
+  expect(result.success).toBe(false)
 })
 
 test('UserUpdateSchema: invalid role', () => {

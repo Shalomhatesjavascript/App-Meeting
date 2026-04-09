@@ -4,14 +4,14 @@ import { ProfileCreateSchema, ProfileUpdateSchema } from './profile'
 
 // Minimal valid payload for creation
 const validCreate = {
-  full_name: 'John Doe',
   alias: 'johnd',
-  gender: 'male',
-  department: 'Computer Science',
-  level: 300,
   bio: 'Just a test user.',
+  department: 'Computer Science',
+  full_name: 'John Doe',
+  gender: 'male',
   intent: 'friendship',
   is_id_verified: 1,
+  level: 300,
 }
 
 test('ProfileCreateSchema accepts valid payload', () => {
@@ -31,5 +31,15 @@ test('ProfileUpdateSchema accepts partial update', () => {
 
 test('ProfileUpdateSchema rejects invalid types', () => {
   const result = v.safeParse(ProfileUpdateSchema, { level: 'not-a-number' })
+  expect(result.success).toBe(false)
+})
+
+test('ProfileCreateSchema rejects invalid level range', () => {
+  const result = v.safeParse(ProfileCreateSchema, { ...validCreate, level: 50 })
+  expect(result.success).toBe(false)
+})
+
+test('ProfileCreateSchema rejects invalid id verification value', () => {
+  const result = v.safeParse(ProfileCreateSchema, { ...validCreate, is_id_verified: 2 })
   expect(result.success).toBe(false)
 })

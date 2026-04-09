@@ -1,16 +1,8 @@
 import type { UserAdminActionInput, UserCreateInput, UserUpdateInput } from '@repo/shared'
+import { hashPassword } from 'better-auth/crypto'
 import { and, eq, like, ne, or } from 'drizzle-orm'
 import { likesTable, matchesTable, messagesTable, profilesTable, usersTable } from '../../db/schema'
 import type { DB } from '../../db/utils'
-
-async function hashPassword(value: string): Promise<string> {
-  let hash = 2166136261
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index)
-    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)
-  }
-  return `h_${(hash >>> 0).toString(16)}`
-}
 
 /**
  * Create a new user.

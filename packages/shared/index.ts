@@ -1,5 +1,6 @@
 export * from './validation/adminLog'
 export * from './validation/auth'
+export * from './validation/common'
 export * from './validation/discovery'
 export * from './validation/interest'
 export * from './validation/like'

@@ -4,9 +4,9 @@ import { MessageCreateSchema, MessageQuerySchema, MessageReadSchema } from './me
 
 // Minimal valid payloads
 const validCreate = {
+  content: 'Hello world!',
   match_id: 1,
   sender_id: 2,
-  content: 'Hello world!',
 }
 
 const validRead = {
@@ -14,9 +14,9 @@ const validRead = {
 }
 
 const validQuery = {
-  match_id: 1,
   before_id: 10,
   limit: 20,
+  match_id: 1,
 }
 
 test('MessageCreateSchema: accepts valid payload', () => {
@@ -50,4 +50,17 @@ test('MessageQuerySchema: accepts valid payload', () => {
 test('MessageQuerySchema: accepts minimal payload', () => {
   const result = v.safeParse(MessageQuerySchema, { match_id: 1 })
   expect(result.success).toBe(true)
+})
+
+test('MessageCreateSchema: rejects float ids', () => {
+  const result = v.safeParse(MessageCreateSchema, {
+    ...validCreate,
+    match_id: 1.1,
+  })
+  expect(result.success).toBe(false)
+})
+
+test('MessageQuerySchema: rejects limit above cap', () => {
+  const result = v.safeParse(MessageQuerySchema, { limit: 101, match_id: 1 })
+  expect(result.success).toBe(false)
 })

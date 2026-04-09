@@ -4,11 +4,6 @@ import { adminLogsTable } from '../../db/schema'
 import { getDrizzleDb } from '../../db/utils'
 
 /**
- * AdminLogsModel
- * Stub for DB access logic for admin logs.
- * Replace with actual DB integration (Drizzle, Prisma, etc).
- */
-/**
  * Create a new admin log entry.
  */
 export async function createAdminLog(data: AdminLogCreateInput) {
@@ -66,11 +61,13 @@ export async function listAdminLogs(filter?: {
   const db = getDrizzleDb()
 
   const conditions = [
-    filter?.admin_id ? eq(adminLogsTable.admin_id, filter.admin_id) : undefined,
-    filter?.target_user_id ? eq(adminLogsTable.target_user_id, filter.target_user_id) : undefined,
-    filter?.action ? like(adminLogsTable.action, `%${filter.action}%`) : undefined,
-    filter?.from ? gte(adminLogsTable.timestamp, filter.from) : undefined,
-    filter?.to ? lte(adminLogsTable.timestamp, filter.to) : undefined,
+    filter?.admin_id !== undefined ? eq(adminLogsTable.admin_id, filter.admin_id) : undefined,
+    filter?.target_user_id !== undefined
+      ? eq(adminLogsTable.target_user_id, filter.target_user_id)
+      : undefined,
+    filter?.action !== undefined ? like(adminLogsTable.action, `%${filter.action}%`) : undefined,
+    filter?.from !== undefined ? gte(adminLogsTable.timestamp, filter.from) : undefined,
+    filter?.to !== undefined ? lte(adminLogsTable.timestamp, filter.to) : undefined,
   ].filter(Boolean)
 
   if (conditions.length === 0) {

@@ -3,6 +3,8 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 
 import { getDrizzleDb } from '../../db/utils'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireAdmin, requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -51,13 +53,13 @@ const subscriptionsRoutes = new Elysia({
     async ({ params, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const user_id = Number(params.user_id)
-        if (!Number.isFinite(user_id)) {
+        const parsed = parsePositiveInt(params.user_id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
 
         const db = getDrizzleDb()
-        const subscription = await getSubscriptionByUserId(db, user_id)
+        const subscription = await getSubscriptionByUserId(db, parsed.value)
         if (!subscription) {
           return status(404, { error: 'Subscription not found' })
         }
@@ -77,7 +79,7 @@ const subscriptionsRoutes = new Elysia({
     async ({ body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        if (requester.role !== 'admin' && requester.id !== body.user_id) {
+        if (!isSelfOrAdmin(requester, body.user_id)) {
           return status(403, { error: 'Access denied' })
         }
 
@@ -99,21 +101,21 @@ const subscriptionsRoutes = new Elysia({
     async ({ params, body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid subscription id' })
         }
 
         const db = getDrizzleDb()
-        const existing = await getSubscriptionById(db, id)
+        const existing = await getSubscriptionById(db, parsed.value)
         if (!existing) {
           return status(404, { error: 'Subscription not found' })
         }
-        if (requester.role !== 'admin' && requester.id !== existing.user_id) {
+        if (!isSelfOrAdmin(requester, existing.user_id)) {
           return status(403, { error: 'Access denied' })
         }
 
-        const updated = await updateSubscription(db, id, body)
+        const updated = await updateSubscription(db, parsed.value, body)
         return {
           data: updated,
         }
@@ -130,21 +132,21 @@ const subscriptionsRoutes = new Elysia({
     async ({ params, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid subscription id' })
         }
 
         const db = getDrizzleDb()
-        const existing = await getSubscriptionById(db, id)
+        const existing = await getSubscriptionById(db, parsed.value)
         if (!existing) {
           return status(404, { error: 'Subscription not found' })
         }
-        if (requester.role !== 'admin' && requester.id !== existing.user_id) {
+        if (!isSelfOrAdmin(requester, existing.user_id)) {
           return status(403, { error: 'Access denied' })
         }
 
-        await deleteSubscription(db, id)
+        await deleteSubscription(db, parsed.value)
         return { success: true }
       } catch (error) {
         const routeError = toRouteError(error, 'Failed to delete subscription')

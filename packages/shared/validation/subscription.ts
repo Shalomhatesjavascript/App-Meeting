@@ -1,4 +1,10 @@
 import * as v from 'valibot'
+import { IsoTimestampSchema, PositiveIntSchema } from './common'
+
+const IsoDateOrTimestampSchema = v.union([
+  IsoTimestampSchema,
+  v.pipe(v.string(), v.trim(), v.isoDate()),
+])
 
 /**
  * Enum for subscription tiers.
@@ -15,11 +21,11 @@ export type SubscriptionTierEnumOutput = v.InferOutput<typeof SubscriptionTierEn
  * Schema for creating a new subscription.
  */
 export const SubscriptionCreateSchema = v.object({
-  user_id: v.number(),
+  expiry_date: IsoDateOrTimestampSchema,
+  payment_ref: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
+  start_date: IsoDateOrTimestampSchema,
   tier: SubscriptionTierEnum,
-  start_date: v.string(),
-  expiry_date: v.string(),
-  payment_ref: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+  user_id: PositiveIntSchema,
 })
 export type SubscriptionCreateInput = v.InferInput<typeof SubscriptionCreateSchema>
 export type SubscriptionCreateOutput = v.InferOutput<typeof SubscriptionCreateSchema>
@@ -29,11 +35,11 @@ export type SubscriptionCreateOutput = v.InferOutput<typeof SubscriptionCreateSc
  * All fields optional except id.
  */
 export const SubscriptionUpdateSchema = v.object({
-  id: v.number(),
+  expiry_date: v.optional(IsoDateOrTimestampSchema),
+  id: PositiveIntSchema,
+  payment_ref: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
+  start_date: v.optional(IsoDateOrTimestampSchema),
   tier: v.optional(SubscriptionTierEnum),
-  start_date: v.optional(v.string()),
-  expiry_date: v.optional(v.string()),
-  payment_ref: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(100))),
 })
 export type SubscriptionUpdateInput = v.InferInput<typeof SubscriptionUpdateSchema>
 export type SubscriptionUpdateOutput = v.InferOutput<typeof SubscriptionUpdateSchema>
@@ -42,12 +48,12 @@ export type SubscriptionUpdateOutput = v.InferOutput<typeof SubscriptionUpdateSc
  * Schema for subscription response (DB row).
  */
 export const SubscriptionSchema = v.object({
-  id: v.number(),
-  user_id: v.number(),
+  expiry_date: IsoDateOrTimestampSchema,
+  id: PositiveIntSchema,
+  payment_ref: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
+  start_date: IsoDateOrTimestampSchema,
   tier: SubscriptionTierEnum,
-  start_date: v.string(),
-  expiry_date: v.string(),
-  payment_ref: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+  user_id: PositiveIntSchema,
 })
 export type SubscriptionInput = v.InferInput<typeof SubscriptionSchema>
 export type SubscriptionOutput = v.InferOutput<typeof SubscriptionSchema>

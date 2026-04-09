@@ -11,7 +11,9 @@ import type { DB } from '../../db/utils'
 
 export async function createInterest(db: DB, data: InterestCreateInput) {
   const result = safeParse(InterestCreateSchema, data)
-  if (!result.success) throw result.issues
+  if (!result.success) {
+    throw new Error(result.issues[0]?.message ?? 'Invalid interest payload')
+  }
   const [inserted] = await db.insert(interestsTable).values({ name: data.name }).returning()
   return inserted
 }
@@ -26,7 +28,9 @@ export async function getInterestById(db: DB, id: number) {
 
 export async function updateInterest(db: DB, data: InterestUpdateInput) {
   const result = safeParse(InterestUpdateSchema, data)
-  if (!result.success) throw result.issues
+  if (!result.success) {
+    throw new Error(result.issues[0]?.message ?? 'Invalid interest payload')
+  }
   const [updated] = await db
     .update(interestsTable)
     .set({ name: data.name })

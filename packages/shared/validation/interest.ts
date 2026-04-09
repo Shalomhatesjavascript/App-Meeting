@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { PositiveIntSchema } from './common'
 
 /**
  * Schema for creating a new interest.
@@ -7,6 +8,7 @@ import * as v from 'valibot'
 export const InterestCreateSchema = v.object({
   name: v.pipe(
     v.string(),
+    v.trim(),
     v.minLength(1, 'Interest name is required'),
     v.maxLength(50, 'Interest name must be at most 50 characters'),
   ),
@@ -18,9 +20,10 @@ export const InterestCreateSchema = v.object({
  * - name: required, 1-50 chars
  */
 export const InterestUpdateSchema = v.object({
-  id: v.number(),
+  id: PositiveIntSchema,
   name: v.pipe(
     v.string(),
+    v.trim(),
     v.minLength(1, 'Interest name is required'),
     v.maxLength(50, 'Interest name must be at most 50 characters'),
   ),

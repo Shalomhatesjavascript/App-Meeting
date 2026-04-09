@@ -2,6 +2,8 @@ import { UserCreateSchema, UserSearchQuerySchema, UserUpdateSchema } from '@repo
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parseNonNegativeInt, parsePositiveInt } from '../../lib/input-parsers'
 import { requireAdmin, requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -74,12 +76,18 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
       const requester = await requireUser(headers)
       const db = getDrizzleDb()
 
-      const limitNum = query?.limit ? Number(query.limit) : undefined
-      const offsetNum = query?.offset ? Number(query.offset) : undefined
+      const parsedLimit = query?.limit ? parsePositiveInt(query.limit) : null
+      const parsedOffset = query?.offset ? parseNonNegativeInt(query.offset) : null
+      if (parsedLimit && !parsedLimit.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedOffset && !parsedOffset.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
 
       const parsed = v.safeParse(UserSearchQuerySchema, {
-        limit: Number.isFinite(limitNum) ? limitNum : undefined,
-        offset: Number.isFinite(offsetNum) ? offsetNum : undefined,
+        limit: parsedLimit?.success ? parsedLimit.value : undefined,
+        offset: parsedOffset?.success ? parsedOffset.value : undefined,
         q: query?.q,
       })
 
@@ -108,15 +116,15 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
-        if (requester.role !== 'admin' && requester.id !== id) {
+        if (!isSelfOrAdmin(requester, parsed.value)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()
-        const user = await getUserById(db, id)
+        const user = await getUserById(db, parsed.value)
         if (!user) {
           return status(404, { error: 'User not found' })
         }
@@ -139,15 +147,15 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
-        if (requester.role !== 'admin' && requester.id !== id) {
+        if (!isSelfOrAdmin(requester, parsed.value)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()
-        const user = await updateUser(db, id, body)
+        const user = await updateUser(db, parsed.value, body)
         if (!user) {
           return status(404, { error: 'User not found' })
         }
@@ -170,12 +178,12 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
         const db = getDrizzleDb()
-        await deleteUser(db, id)
+        await deleteUser(db, parsed.value)
         return { success: true }
       } catch (error) {
         const routeError = toRouteError(error, 'Failed to delete user')
@@ -190,12 +198,12 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, headers, status }) => {
       try {
         const admin = await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
         const db = getDrizzleDb()
-        const updated = await adminActionUser(db, id, { is_banned: 1 })
+        const updated = await adminActionUser(db, parsed.value, { is_banned: 1 })
         return {
           data: {
             ...updated,
@@ -216,12 +224,12 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, headers, status }) => {
       try {
         const admin = await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
         const db = getDrizzleDb()
-        const updated = await adminActionUser(db, id, { is_approved: 1 })
+        const updated = await adminActionUser(db, parsed.value, { is_approved: 1 })
         return {
           data: {
             ...updated,
@@ -242,15 +250,15 @@ const usersRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.use
     async ({ params, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
         const db = getDrizzleDb()
-        const stats = await getUserStats(db, id)
+        const stats = await getUserStats(db, parsed.value)
         return {
           data: {
-            id,
+            id: parsed.value,
             stats,
           },
         }

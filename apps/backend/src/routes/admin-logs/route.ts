@@ -1,6 +1,7 @@
-import { AdminLogCreateSchema } from '@repo/shared'
+import { AdminLogCreateSchema, AdminLogListQuerySchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireAdmin } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -11,12 +12,35 @@ const adminLogsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
   .get('/', async ({ headers, query, status }) => {
     try {
       await requireAdmin(headers)
-      const logs = await listAdminLogs({
+
+      const parsedAdminId = query.admin_id ? parsePositiveInt(query.admin_id) : null
+      const parsedTargetUserId = query.target_user_id
+        ? parsePositiveInt(query.target_user_id)
+        : null
+      if (parsedAdminId && !parsedAdminId.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+      if (parsedTargetUserId && !parsedTargetUserId.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+
+      const parsed = v.safeParse(AdminLogListQuerySchema, {
         action: query.action,
-        admin_id: query.admin_id ? Number(query.admin_id) : undefined,
+        admin_id: parsedAdminId?.success ? parsedAdminId.value : undefined,
         from: query.from,
-        target_user_id: query.target_user_id ? Number(query.target_user_id) : undefined,
+        target_user_id: parsedTargetUserId?.success ? parsedTargetUserId.value : undefined,
         to: query.to,
+      })
+      if (!parsed.success) {
+        return status(400, { error: 'Invalid query parameters' })
+      }
+
+      const logs = await listAdminLogs({
+        action: parsed.output.action,
+        admin_id: parsed.output.admin_id,
+        from: parsed.output.from,
+        target_user_id: parsed.output.target_user_id,
+        to: parsed.output.to,
       })
       return {
         data: logs,
@@ -32,11 +56,11 @@ const adminLogsRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix
     async ({ params, headers, status }) => {
       try {
         await requireAdmin(headers)
-        const id = Number(params.id)
-        if (!Number.isFinite(id)) {
+        const parsed = parsePositiveInt(params.id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid log id' })
         }
-        const log = await getAdminLogById(id)
+        const log = await getAdminLogById(parsed.value)
         if (!log) {
           return status(404, { error: 'Log not found' })
         }

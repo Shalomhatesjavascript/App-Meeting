@@ -2,6 +2,8 @@ import { ProfileCreateSchema, ProfileUpdateSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { getDrizzleDb } from '../../db/utils'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -28,13 +30,13 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     '/:user_id',
     async ({ params, status }) => {
       try {
-        const user_id = Number(params.user_id)
-        if (!Number.isFinite(user_id)) {
+        const parsed = parsePositiveInt(params.user_id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
 
         const db = getDrizzleDb()
-        const profile = await getProfileByUserId(db, user_id)
+        const profile = await getProfileByUserId(db, parsed.value)
         if (!profile) {
           return status(404, { error: 'Profile not found' })
         }
@@ -68,15 +70,15 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     async ({ params, body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const user_id = Number(params.user_id)
-        if (!Number.isFinite(user_id)) {
+        const parsed = parsePositiveInt(params.user_id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
-        if (requester.role !== 'admin' && requester.id !== user_id) {
+        if (!isSelfOrAdmin(requester, parsed.value)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()
-        const updated = await updateProfile(db, user_id, body)
+        const updated = await updateProfile(db, parsed.value, body)
         if (!updated) {
           return status(404, { error: 'Profile not found' })
         }
@@ -94,15 +96,15 @@ const profilesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     async ({ params, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const user_id = Number(params.user_id)
-        if (!Number.isFinite(user_id)) {
+        const parsed = parsePositiveInt(params.user_id)
+        if (!parsed.success) {
           return status(400, { error: 'Invalid user id' })
         }
-        if (requester.role !== 'admin' && requester.id !== user_id) {
+        if (!isSelfOrAdmin(requester, parsed.value)) {
           return status(403, { error: 'Access denied' })
         }
         const db = getDrizzleDb()
-        await deleteProfile(db, user_id)
+        await deleteProfile(db, parsed.value)
         return { success: true }
       } catch (error) {
         const routeError = toRouteError(error, 'Failed to delete profile')

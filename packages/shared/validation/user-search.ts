@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { NonNegativeIntSchema, PositiveIntSchema } from './common'
 
 /**
  * Schema for user search query parameters.
@@ -9,9 +10,9 @@ import * as v from 'valibot'
  * Clamping is done at the route level, not in the schema.
  */
 export const UserSearchQuerySchema = v.object({
-  limit: v.optional(v.pipe(v.number(), v.minValue(1))),
-  offset: v.optional(v.pipe(v.number(), v.minValue(0))),
-  q: v.optional(v.pipe(v.string(), v.trim())),
+  limit: v.optional(PositiveIntSchema),
+  offset: v.optional(NonNegativeIntSchema),
+  q: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
 })
 export type UserSearchQueryInput = v.InferInput<typeof UserSearchQuerySchema>
 export type UserSearchQueryOutput = v.InferOutput<typeof UserSearchQuerySchema>

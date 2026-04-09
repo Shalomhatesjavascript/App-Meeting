@@ -9,11 +9,11 @@ import {
 
 // Helper valid data
 const validCreate = {
-  user_id: 1,
-  tier: 'premium',
-  start_date: '2024-01-01T00:00:00.000Z',
   expiry_date: '2024-12-31T23:59:59.000Z',
   payment_ref: 'pay_123456',
+  start_date: '2024-01-01T00:00:00.000Z',
+  tier: 'premium',
+  user_id: 1,
 }
 
 test('SubscriptionCreateSchema: valid input passes', () => {
@@ -50,4 +50,20 @@ test('SubscriptionTierEnum: only allows allowed values', () => {
   expect(v.safeParse(SubscriptionTierEnum, 'premium').success).toBe(true)
   expect(v.safeParse(SubscriptionTierEnum, 'vip').success).toBe(true)
   expect(v.safeParse(SubscriptionTierEnum, 'other').success).toBe(false)
+})
+
+test('SubscriptionCreateSchema: rejects invalid timestamp', () => {
+  const result = v.safeParse(SubscriptionCreateSchema, {
+    ...validCreate,
+    start_date: 'not-a-timestamp',
+  })
+  expect(result.success).toBe(false)
+})
+
+test('SubscriptionCreateSchema: rejects non-positive user_id', () => {
+  const result = v.safeParse(SubscriptionCreateSchema, {
+    ...validCreate,
+    user_id: 0,
+  })
+  expect(result.success).toBe(false)
 })

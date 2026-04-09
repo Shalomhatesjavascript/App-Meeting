@@ -1,6 +1,8 @@
 import { MessageCreateSchema, MessageQuerySchema, MessageReadSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
+import { isSelfOrAdmin } from '../../lib/access-control'
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -18,20 +20,29 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     async ({ params, query, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const match_id = Number(params.match_id)
-        if (!Number.isFinite(match_id)) {
+        const parsedMatchId = parsePositiveInt(params.match_id)
+        if (!parsedMatchId.success) {
           return status(400, { error: 'Invalid match id' })
         }
 
-        const allowed = await canReadMatchMessages(match_id, requester.id)
+        const allowed = await canReadMatchMessages(parsedMatchId.value, requester.id)
         if (!allowed && requester.role !== 'admin') {
           return status(403, { error: 'Access denied' })
         }
 
+        const parsedBeforeId = query.before_id ? parsePositiveInt(query.before_id) : null
+        const parsedLimit = query.limit ? parsePositiveInt(query.limit) : null
+        if (parsedBeforeId && !parsedBeforeId.success) {
+          return status(400, { error: 'Invalid query parameters' })
+        }
+        if (parsedLimit && !parsedLimit.success) {
+          return status(400, { error: 'Invalid query parameters' })
+        }
+
         const parsed = v.safeParse(MessageQuerySchema, {
-          before_id: query.before_id ? Number(query.before_id) : undefined,
-          limit: query.limit ? Number(query.limit) : undefined,
-          match_id,
+          before_id: parsedBeforeId?.success ? parsedBeforeId.value : undefined,
+          limit: parsedLimit?.success ? parsedLimit.value : undefined,
+          match_id: parsedMatchId.value,
         })
 
         if (!parsed.success) {
@@ -53,7 +64,7 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     async ({ body, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        if (requester.role !== 'admin' && requester.id !== body.sender_id) {
+        if (!isSelfOrAdmin(requester, body.sender_id)) {
           return status(403, { error: 'Access denied' })
         }
 
@@ -72,7 +83,12 @@ const messagesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.
     async ({ params, headers, status }) => {
       try {
         await requireUser(headers)
-        const parsed = v.safeParse(MessageReadSchema, { id: Number(params.id) })
+        const parsedId = parsePositiveInt(params.id)
+        if (!parsedId.success) {
+          return status(400, { error: 'Invalid message id' })
+        }
+
+        const parsed = v.safeParse(MessageReadSchema, { id: parsedId.value })
         if (!parsed.success) {
           return status(400, { error: 'Invalid message id' })
         }

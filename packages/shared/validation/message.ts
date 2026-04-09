@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { PositiveIntSchema } from './common'
 
 /**
  * Schema for creating a new message.
@@ -7,9 +8,9 @@ import * as v from 'valibot'
  * - content: required, string (1-2000 chars)
  */
 export const MessageCreateSchema = v.object({
-  match_id: v.number(),
-  sender_id: v.number(),
-  content: v.pipe(v.string(), v.minLength(1), v.maxLength(2000)),
+  content: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(2000)),
+  match_id: PositiveIntSchema,
+  sender_id: PositiveIntSchema,
 })
 export type MessageCreateInput = v.InferInput<typeof MessageCreateSchema>
 export type MessageCreateOutput = v.InferOutput<typeof MessageCreateSchema>
@@ -19,7 +20,7 @@ export type MessageCreateOutput = v.InferOutput<typeof MessageCreateSchema>
  * - id: required, integer (message id)
  */
 export const MessageReadSchema = v.object({
-  id: v.number(),
+  id: PositiveIntSchema,
 })
 export type MessageReadInput = v.InferInput<typeof MessageReadSchema>
 export type MessageReadOutput = v.InferOutput<typeof MessageReadSchema>
@@ -31,9 +32,9 @@ export type MessageReadOutput = v.InferOutput<typeof MessageReadSchema>
  * - limit: optional, integer (max results)
  */
 export const MessageQuerySchema = v.object({
-  match_id: v.number(),
-  before_id: v.optional(v.number()),
-  limit: v.optional(v.number()),
+  before_id: v.optional(PositiveIntSchema),
+  limit: v.optional(v.pipe(PositiveIntSchema, v.maxValue(100))),
+  match_id: PositiveIntSchema,
 })
 export type MessageQueryInput = v.InferInput<typeof MessageQuerySchema>
 export type MessageQueryOutput = v.InferOutput<typeof MessageQuerySchema>

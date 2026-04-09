@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { NonNegativeIntSchema, PositiveIntSchema } from './common'
 
 /**
  * Schema for discovery query parameters.
@@ -7,8 +8,8 @@ import * as v from 'valibot'
  * - offset: optional, non-negative integer
  */
 export const DiscoveryRecommendationsQuerySchema = v.object({
-  limit: v.optional(v.pipe(v.number(), v.minValue(1))),
-  offset: v.optional(v.pipe(v.number(), v.minValue(0))),
+  limit: v.optional(PositiveIntSchema),
+  offset: v.optional(NonNegativeIntSchema),
 })
 export type DiscoveryRecommendationsQueryInput = v.InferInput<
   typeof DiscoveryRecommendationsQuerySchema
@@ -25,9 +26,9 @@ export type DiscoveryRecommendationsQueryOutput = v.InferOutput<
  * - minScore: optional, non-negative integer
  */
 export const DiscoveryPossibleMatchesQuerySchema = v.object({
-  limit: v.optional(v.pipe(v.number(), v.minValue(1))),
-  minScore: v.optional(v.pipe(v.number(), v.minValue(0))),
-  offset: v.optional(v.pipe(v.number(), v.minValue(0))),
+  limit: v.optional(PositiveIntSchema),
+  minScore: v.optional(NonNegativeIntSchema),
+  offset: v.optional(NonNegativeIntSchema),
 })
 export type DiscoveryPossibleMatchesQueryInput = v.InferInput<
   typeof DiscoveryPossibleMatchesQuerySchema
@@ -43,8 +44,8 @@ export type DiscoveryPossibleMatchesQueryOutput = v.InferOutput<
  * - offset: optional, non-negative integer
  */
 export const DiscoveryCandidatesQuerySchema = v.object({
-  limit: v.optional(v.pipe(v.number(), v.minValue(1))),
-  offset: v.optional(v.pipe(v.number(), v.minValue(0))),
+  limit: v.optional(PositiveIntSchema),
+  offset: v.optional(NonNegativeIntSchema),
 })
 export type DiscoveryCandidatesQueryInput = v.InferInput<typeof DiscoveryCandidatesQuerySchema>
 export type DiscoveryCandidatesQueryOutput = v.InferOutput<typeof DiscoveryCandidatesQuerySchema>

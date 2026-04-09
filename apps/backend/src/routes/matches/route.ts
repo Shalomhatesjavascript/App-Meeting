@@ -2,6 +2,7 @@ import { MatchCreateSchema, MatchIdSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
 
+import { parsePositiveInt } from '../../lib/input-parsers'
 import { requireUser } from '../../lib/request-auth'
 import { toRouteError } from '../../lib/route-error'
 import { ApiRoutePrefix, getApiRoutePrefixUrl } from '../../lib/route-prefixes'
@@ -45,7 +46,12 @@ const matchesRoutes = new Elysia({ prefix: getApiRoutePrefixUrl(ApiRoutePrefix.m
     async ({ params, headers, status }) => {
       try {
         const requester = await requireUser(headers)
-        const parsed = v.safeParse(MatchIdSchema, { id: Number(params.id) })
+        const parsedId = parsePositiveInt(params.id)
+        if (!parsedId.success) {
+          return status(400, { error: 'Invalid match id' })
+        }
+
+        const parsed = v.safeParse(MatchIdSchema, { id: parsedId.value })
         if (!parsed.success) {
           return status(400, { error: 'Invalid match id' })
         }
