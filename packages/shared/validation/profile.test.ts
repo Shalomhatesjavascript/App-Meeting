@@ -4,13 +4,15 @@ import { ProfileCreateSchema, ProfileUpdateSchema } from './profile'
 
 // Minimal valid payload for creation
 const validCreate = {
+  avatarSeed: 'felix',
+  avatarStyle: 'notionists',
   alias: 'johnd',
   bio: 'Just a test user.',
   department: 'Computer Science',
-  full_name: 'John Doe',
+  fullName: 'John Doe',
   gender: 'male',
   intent: 'friendship',
-  is_id_verified: 1,
+  isIdVerified: true,
   level: 300,
 }
 
@@ -40,6 +42,6 @@ test('ProfileCreateSchema rejects invalid level range', () => {
 })
 
 test('ProfileCreateSchema rejects invalid id verification value', () => {
-  const result = v.safeParse(ProfileCreateSchema, { ...validCreate, is_id_verified: 2 })
+  const result = v.safeParse(ProfileCreateSchema, { ...validCreate, isIdVerified: 2 })
   expect(result.success).toBe(false)
 })

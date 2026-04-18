@@ -15,13 +15,15 @@ const profileIntentValues = ['dating', 'friendship', 'networking', 'study buddy'
  * - is_id_verified: optional, boolean (0/1)
  */
 export const ProfileCreateSchema = v.object({
+  avatarSeed: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
+  avatarStyle: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(50))),
   alias: v.pipe(v.string(), v.trim(), v.minLength(2), v.maxLength(50)),
   bio: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(500))),
   department: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
-  full_name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
+  fullName: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100)),
   gender: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(20)),
   intent: v.picklist(profileIntentValues),
-  is_id_verified: v.optional(v.union([v.literal(0), v.literal(1)])),
+  isIdVerified: v.optional(v.boolean()),
   level: v.pipe(PositiveIntSchema, v.minValue(100), v.maxValue(800)),
 })
 
@@ -30,13 +32,15 @@ export const ProfileCreateSchema = v.object({
  * All fields optional except user_id (if needed for backend logic).
  */
 export const ProfileUpdateSchema = v.object({
+  avatarSeed: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
+  avatarStyle: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(50))),
   alias: v.optional(v.pipe(v.string(), v.trim(), v.minLength(2), v.maxLength(50))),
   bio: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(500))),
   department: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
-  full_name: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
+  fullName: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(100))),
   gender: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(20))),
   intent: v.optional(v.picklist(profileIntentValues)),
-  is_id_verified: v.optional(v.union([v.literal(0), v.literal(1)])),
+  isIdVerified: v.optional(v.boolean()),
   level: v.optional(v.pipe(PositiveIntSchema, v.minValue(100), v.maxValue(800))),
 })
 

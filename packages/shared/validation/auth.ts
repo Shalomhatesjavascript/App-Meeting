@@ -4,6 +4,7 @@ import { BabcockEmailSchema, StrongPasswordSchema } from './common'
 export const RegisterSchema = v.object({
   confirmPassword: StrongPasswordSchema,
   email: BabcockEmailSchema,
+  name: v.pipe(v.string(), v.trim(), v.minLength(2), v.maxLength(100)),
   password: StrongPasswordSchema,
 })
 export type RegisterInput = v.InferInput<typeof RegisterSchema>

@@ -1,30 +1,31 @@
 {
-  "name": "@repo/shared",
-  "private": true,
-  "type": "module",
-  "sideEffects": false,
+  "dependencies": {
+    "better-ts-enum": "^0.5.0",
+    "valibot": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "latest"
+  },
   "exports": {
     ".": "./index.ts"
   },
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome lint ./ --write",
-    "format": "biome format ./ --write",
-    "clean": "rm -rf dist *.tsbuildinfo",
-    "test": "bun test"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "bun-types": "latest"
-  },
+  "name": "@repo/shared",
   "peerDependencies": {
     "typescript": "^5"
   },
-  "dependencies": {
-    "valibot": "^1.3.0"
-  }
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "format": "biome format ./ --write",
+    "lint": "biome lint ./ --write",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "sideEffects": false,
+  "type": "module"
 }

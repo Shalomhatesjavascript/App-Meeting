@@ -16,6 +16,7 @@ test('RegisterSchema: valid student email and password', () => {
   const input = {
     confirmPassword: 'Password123',
     email: validEmail,
+    name: 'John Doe',
     password: 'Password123',
   }
   expect(() => v.parse(RegisterSchema, input)).not.toThrow()
@@ -25,6 +26,7 @@ test('RegisterSchema: invalid email fails', () => {
   const input = {
     confirmPassword: 'Password123',
     email: 'user@gmail.com',
+    name: 'John Doe',
     password: 'Password123',
   }
   expect(() => v.parse(RegisterSchema, input)).toThrow()
@@ -34,6 +36,7 @@ test('RegisterSchema: weak password fails', () => {
   const input = {
     confirmPassword: 'password123',
     email: validEmail,
+    name: 'John Doe',
     password: 'password123',
   }
   expect(() => v.parse(RegisterSchema, input)).toThrow()

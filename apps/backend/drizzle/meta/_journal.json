@@ -1,13 +1,13 @@
 {
+  "version": "7",
   "dialect": "sqlite",
   "entries": [
     {
-      "breakpoints": true,
       "idx": 0,
-      "tag": "0000_overconfident_chimera",
       "version": "6",
-      "when": 1775489208641
+      "when": 1779038198472,
+      "tag": "0000_closed_carmella_unuscione",
+      "breakpoints": true
     }
-  ],
-  "version": "7"
+  ]
 }

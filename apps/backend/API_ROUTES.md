@@ -46,14 +46,6 @@ Access levels in this document:
 |---|---|---|---|
 | GET | `/health` | Public | Basic server health check |
 
-## Auth (`/auth`)
-
-| Method | Path | Access | Body / Query | Notes |
-|---|---|---|---|---|
-| POST | `/auth/register` | Public | `RegisterSchema` | Compatibility endpoint. Prefer Better Auth sign-up routes. |
-| POST | `/auth/login` | Public | `LoginSchema` | Compatibility endpoint. Prefer Better Auth sign-in routes. |
-| POST | `/auth/logout` | Public | none | Compatibility endpoint. Prefer Better Auth sign-out routes. |
-
 ## Better Auth (`/api/better-auth`)
 
 These are managed by Better Auth and should be consumed via the Better Auth client.
@@ -79,15 +71,15 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 | POST | `/users/:id/approve` | Admin | `id` path param | Sets `is_approved = 1` |
 | GET | `/users/:id/stats` | Admin | `id` path param | Returns user engagement stats |
 
-## Profiles (`/profiles`)
+## Profiles (`/api/profiles`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/profiles/me` | User | none | Current user profile |
-| GET | `/profiles/:user_id` | Public | `user_id` path param | Profile by user id |
-| POST | `/profiles` | User | `ProfileCreateSchema` | Creates profile for requester |
-| PUT | `/profiles/:user_id` | User/Admin (owner) | `ProfileUpdateSchema` + `user_id` | Update profile |
-| DELETE | `/profiles/:user_id` | User/Admin (owner) | `user_id` path param | Delete profile |
+| GET | `/api/profiles/me` | User | none | Current user profile |
+| GET | `/api/profiles/:id` | Public | `id` path param | Profile by user id. Hides `fullName` unless requester is the owner or admin. |
+| POST | `/api/profiles` | User | `ProfileCreateSchema` | Creates profile for requester. Includes persisted avatar seed/style fields. |
+| PUT | `/api/profiles/:id` | User/Admin (owner) | `ProfileUpdateSchema` + `id` | Update profile. Includes persisted avatar seed/style fields. |
+| DELETE | `/api/profiles/:id` | User/Admin (owner) | `id` path param | Delete profile |
 
 ## Interests (`/interests`)
 
@@ -103,7 +95,7 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/user-interests/:userId` | Public | `userId` path param | List interests for user |
+| GET | `/user-interests/:id` | Public | `id` path param | List interests for user |
 | POST | `/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Add interest to user |
 | DELETE | `/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Remove interest from user |
 
@@ -128,7 +120,7 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/messages/:match_id` | User/Admin (participant) | `match_id` path, `before_id`/`limit` query | Paginated match messages (positive integer query values) |
+| GET | `/messages/:match_id` | User/Admin (participant) | `match_id` path, `limit` query | Paginated match messages (positive integer query values) |
 | POST | `/messages` | User/Admin (owner) | `MessageCreateSchema` | Send message |
 | POST | `/messages/:id/read` | User | `id` path param | Mark message as read |
 
@@ -138,7 +130,7 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 |---|---|---|---|---|
 | GET | `/subscriptions` | Admin | none | List all subscriptions |
 | GET | `/subscriptions/me` | User | none | Current user subscription |
-| GET | `/subscriptions/:user_id` | Admin | `user_id` path param | Get user subscription |
+| GET | `/subscriptions/:id` | Admin | `id` path param | Get user subscription |
 | POST | `/subscriptions` | User/Admin (owner) | `SubscriptionCreateSchema` | Create subscription |
 | PATCH | `/subscriptions/:id` | User/Admin (owner) | `SubscriptionUpdateSchema` + `id` | Update subscription |
 | DELETE | `/subscriptions/:id` | User/Admin (owner) | `id` path param | Delete/cancel subscription |
@@ -168,4 +160,4 @@ All discovery routes are server-scored and sorted (highest score first).
 - For recommendations UI, use `GET /discovery/recommendations` (or `/possible-matches` for stricter results).
 - For user search UI, use `GET /users/search?q=...&limit=...&offset=...`.
 - For chat pages, sequence is usually: `GET /matches` -> `GET /messages/:match_id` -> `POST /messages`.
-- For profile onboarding/edit, use `POST /profiles` then `PUT /profiles/:user_id` as needed.
+- For profile onboarding/edit, use `POST /api/profiles` then `PUT /api/profiles/:user_id` as needed.

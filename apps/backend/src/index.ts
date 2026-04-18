@@ -1,49 +1,42 @@
+import cors from '@elysiajs/cors'
 import { Elysia } from 'elysia'
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker'
-import { auth } from './lib/better-auth'
-import { getRuntimeString, setRuntimeEnv } from './lib/runtime-env'
-import adminLogsRoutes from './routes/admin-logs/route'
-import authRoutes from './routes/auth/route'
-import discoveryRoutes from './routes/discovery/route'
-import interestsRoutes from './routes/interests/route'
-import likesRoutes from './routes/likes/route'
-import matchesRoutes from './routes/matches/route'
-import messagesRoutes from './routes/messages/route'
-import profilesRoutes from './routes/profiles/route'
-import subscriptionsRoutes from './routes/subscriptions/route'
-import userInterestsRoutes from './routes/user-interests/route'
-import usersRoutes from './routes/users/route'
+import adminLogsRoutes from './admin-logs/route'
+import discoveryRoutes from './discovery/route'
+import interestsRoutes from './interests/route'
+import likesRoutes from './likes/route'
+import matchesRoutes from './matches/route'
+import messagesRoutes from './messages/route'
+import profilesRoutes from './profiles/route'
+import subscriptionsRoutes from './subscriptions/route'
+import usersRoutes from './user/route'
+import userInterestsRoutes from './user-interests/route'
+import { betterAuthRoute } from './utils/auth'
+import { BackendEnv } from './shared/env'
+export type { DiscoveryCandidate } from './discovery/matching'
+export type { MatchInsertDB, MatchSelectDB, MatchUpdateDB } from './matches/schema'
+export type { MessageInsertDB, MessageSelectDB, MessageUpdateDB } from './messages/schema'
+export type { ProfileInsertDB, ProfileSelectDB, ProfileUpdateDB } from './profiles/schema'
+export type {
+  UserMetaInsertDB,
+  UserMetaSelectDB,
+  UserMetaUpdateDB,
+  UserSelectDB,
+  UserWithMetaSelectDB,
+  UserWithMetaUpdateDB,
+} from './user/schema'
+export type { UserEmailSignUpOutput } from './user/validation'
 
-function buildCorsHeaders(origin: string | null): Record<string, string> {
-  const resolvedOrigin = origin || getRuntimeString('FRONTEND_URL') || '*'
-
-  return {
-    'access-control-allow-credentials': resolvedOrigin === '*' ? 'false' : 'true',
-    'access-control-allow-headers': 'content-type,authorization,cookie',
-    'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'access-control-allow-origin': resolvedOrigin,
-    'access-control-max-age': '86400',
-    vary: 'Origin',
-  }
-}
+const allowAllInDev = BackendEnv.NODE_ENV !== 'production'
 
 const app = new Elysia({ adapter: CloudflareAdapter })
-  .onRequest(({ request, set }) => {
-    const corsHeaders = buildCorsHeaders(request.headers.get('origin'))
-    for (const [key, value] of Object.entries(corsHeaders)) {
-      set.headers[key] = value
-    }
-
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: corsHeaders,
-        status: 204,
-      })
-    }
-  })
+  .use(
+    cors({
+      origin: allowAllInDev ? true : BackendEnv.FRONTEND_URL,
+    }),
+  )
   .get('/health', ({ status }) => status(200))
-  .all('/api/better-auth/*', ({ request }) => auth.handler(request))
-  .use(authRoutes)
+  .use(betterAuthRoute)
   .use(usersRoutes)
   .use(profilesRoutes)
   .use(interestsRoutes)
@@ -61,8 +54,7 @@ export type ElysiaApp = typeof app
 export { app }
 
 export default {
-  fetch(request: Request, workerEnv: Record<string, unknown>): Response | Promise<Response> {
-    setRuntimeEnv(workerEnv)
+  async fetch(request: Request): Promise<Response> {
     return app.fetch(request)
   },
 }
