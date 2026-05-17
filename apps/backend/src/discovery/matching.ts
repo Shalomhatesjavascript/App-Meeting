@@ -3,12 +3,17 @@ import type { DrizzleD1Database } from 'drizzle-orm/d1'
 import type { InterestNameEnum } from '../interests/enum'
 import { InterestsTable } from '../interests/schema'
 import { LikesTable } from '../likes/schema'
-import { ProfilesTable } from '../profiles/schema'
+import { type ProfileSelectDB, ProfilesTable } from '../profiles/schema'
 import { UserMetaTable } from '../user/schema'
 import { UserInterestsTable } from '../user-interests/schema'
 import { users } from '../utils/auth/schema'
 
 export type DiscoveryCandidate = Readonly<{
+  id: string
+  name: string
+  avatarSeed: ProfileSelectDB['avatarSeed']
+  avatarStyle: ProfileSelectDB['avatarStyle']
+  isVerified: boolean
   userId: string
   email: string
   alias: string
@@ -133,12 +138,15 @@ export async function getDiscoveryCandidates(
     const candidateUsers = await db
       .select({
         alias: ProfilesTable.alias,
+        avatarSeed: ProfilesTable.avatarSeed,
+        avatarStyle: ProfilesTable.avatarStyle,
         bio: ProfilesTable.bio,
         department: ProfilesTable.department,
         email: users.email,
         gender: ProfilesTable.gender,
         intent: ProfilesTable.intent,
         level: ProfilesTable.level,
+        isVerified: UserMetaTable.isVerified,
         userId: ProfilesTable.userId,
       })
       .from(ProfilesTable)
@@ -216,13 +224,18 @@ export async function getDiscoveryCandidates(
 
       scoredCandidates.push({
         alias: candidate.alias,
+        avatarSeed: candidate.avatarSeed,
+        avatarStyle: candidate.avatarStyle,
         bio: candidate.bio,
         department: candidate.department,
         email: candidate.email,
+        id: candidate.userId,
         gender: candidate.gender,
+        isVerified: candidate.isVerified,
         intent: candidate.intent,
         interestNames,
         level: candidate.level,
+        name: candidate.alias,
         score,
         sharedInterestCount: sharedCount,
         userId: candidate.userId,

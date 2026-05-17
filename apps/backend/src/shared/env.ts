@@ -11,11 +11,11 @@ const BackendEnvSchema = v.object({
   CLOUDFLARE_DATABASE_ID: StringSchema,
   EMAIL_SENDER: EmailSchema,
   FRONTEND_URL: UrlSchema,
-  RESEND_API_KEY: StringSchema,
   NODE_ENV: v.optional(
     v.pipe(StringSchema, v.picklist(['production', 'development'])),
     'development',
   ),
+  RESEND_API_KEY: StringSchema,
 })
 
 export const BackendEnv = v.parse(BackendEnvSchema, process.env)

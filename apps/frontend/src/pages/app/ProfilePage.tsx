@@ -2,11 +2,10 @@
 // Profile Page — View & Edit own profile
 // ============================================
 
-import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getInterestsCatalog, INTENTS } from '../../api/catalog'
-import { getProfile, updateProfile } from '../../api/profile'
+import { INTENTS } from '../../shared/catalog'
 import { Avatar } from '../../components/Avatar'
 import { AvatarPicker } from '../../components/AvatarPicker'
 import { BottomNav } from '../../components/BottomNav'
@@ -14,53 +13,58 @@ import { IntentBadge, VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Textarea } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { useAuth } from '../../context/AuthContext'
-import type { FrontendProfile } from '../../types'
+import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
+import { useLogoutUserMutation } from '../../hooks/useAuthMutations'
+import { useProfileQuery, useUpdateProfileMutation } from '../../hooks/useProfile'
+import type { FrontendProfile, ProfileUpdateValues } from '../../types'
+import { useUserQuery } from '../../hooks/useUser'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
-  const { user, logout, updateUser } = useAuth()
+  const { data: userData } = useUserQuery()
   const { showToast } = useApp()
+  const profileQuery = useProfileQuery()
+  const interestsCatalogQuery = useInterestsCatalogQuery()
+  const updateProfileMutation = useUpdateProfileMutation()
+  const logoutMutation = useLogoutUserMutation()
 
-  const [profile, setProfile] = useState<FrontendProfile | null>(null)
-  const [loading, setLoading] = useState(true)
   const [editSection, setEditSection] = useState<'avatar' | 'bio' | 'intent' | 'interests' | null>(
     null,
   )
-  const [saving, setSaving] = useState(false)
   const [editData, setEditData] = useState<Partial<FrontendProfile>>({})
-  const [interestOptions, setInterestOptions] = useState<string[]>([])
+  const profile = profileQuery.data || null
+  const interestOptions = [...(interestsCatalogQuery.data || [])]
+  const loading = profileQuery.isLoading
+  const saving = updateProfileMutation.isPending
 
   useEffect(() => {
-    getProfile()
-      .then((p) => {
-        setProfile(p)
-        setEditData(p ? { ...p } : {})
-      })
-      .finally(() => setLoading(false))
-  }, [])
+    setEditData(profile ? { ...profile } : {})
+  }, [profile])
 
   useEffect(() => {
-    getInterestsCatalog().then((options) => setInterestOptions([...options]))
-  }, [])
+    if (profileQuery.isError) {
+      showToast({ message: 'Failed to load profile', type: 'error' })
+    }
+  }, [profileQuery.isError, showToast])
+
+  useEffect(() => {
+    if (interestsCatalogQuery.isError) {
+      showToast({ message: 'Failed to load interests', type: 'error' })
+    }
+  }, [interestsCatalogQuery.isError, showToast])
 
   const handleSaveSection = async () => {
-    setSaving(true)
     try {
-      const { profile: updated } = await updateProfile(editData)
-      setProfile(updated)
-      updateUser({ profile: updated })
+      await updateProfileMutation.mutateAsync(editData as ProfileUpdateValues)
       setEditSection(null)
       showToast({ message: 'Profile updated!', type: 'success' })
     } catch {
       showToast({ message: 'Failed to save changes', type: 'error' })
-    } finally {
-      setSaving(false)
     }
   }
 
   const handleLogout = async () => {
-    await logout()
+    await logoutMutation.mutateAsync()
     navigate('/login', { replace: true })
   }
 
@@ -166,11 +170,11 @@ export default function ProfilePage() {
                     fontWeight: 600,
                   }}
                 >
-                  {user?.name}
+                  {userData?.name}
                 </h2>
-                {user?.isVerified && <VerifiedBadge />}
+                {userData?.isVerified && <VerifiedBadge />}
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{user?.email}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{userData?.email}</p>
               {displayProfile.department && (
                 <p
                   style={{
@@ -188,10 +192,10 @@ export default function ProfilePage() {
           {editSection === 'avatar' ? (
             <div style={{ marginTop: '1.5rem' }}>
               <AvatarPicker
-                onSelect={({ style, seed }) =>
-                  setEditData((p) => ({ ...p, avatarSeed: seed, avatarStyle: style }))
+                onSelect={({ avatarSeed, avatarStyle }) =>
+                  setEditData((p) => ({ ...p, avatarSeed, avatarStyle }))
                 }
-                selected={{ seed: editData.avatarSeed, style: editData.avatarStyle }}
+                selected={{ avatarSeed: editData.avatarSeed, avatarStyle: editData.avatarStyle }}
               />
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                 <Button
@@ -244,7 +248,7 @@ export default function ProfilePage() {
               <button
                 onClick={() => {
                   setEditSection('intent')
-                  setEditData(profile)
+                  setEditData(profile ?? {})
                 }}
                 style={editBtnStyle}
                 type="button"
@@ -259,7 +263,9 @@ export default function ProfilePage() {
                 {INTENTS.map((intent) => (
                   <button
                     key={intent.id}
-                    onClick={() => setEditData((p) => ({ ...p, intent: intent.id }))}
+                    onClick={() =>
+                      setEditData((p) => ({ ...p, intent: intent.id as FrontendProfile['intent'] }))
+                    }
                     style={{
                       alignItems: 'center',
                       background: editData.intent === intent.id ? 'rgba(18,23,74,0.04)' : '#fff',
@@ -490,21 +496,21 @@ export default function ProfilePage() {
         <section style={{ ...sectionStyle, background: 'rgba(18,23,74,0.03)' }}>
           <h3 style={{ ...sectionTitleStyle, marginBottom: '0.875rem' }}>Account</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-            <InfoRow label="Plan" value={user?.isPremium ? '⭐ Premium' : '✦ Free'} />
+            <InfoRow label="Plan" value={userData?.isPremium ? '⭐ Premium' : '✦ Free'} />
             <InfoRow
               label="Joined"
               value={
-                user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString('en-GB', {
+                userData?.createdAt
+                  ? new Date(userData.createdAt).toLocaleDateString('en-GB', {
                       month: 'long',
                       year: 'numeric',
                     })
                   : 'Recently'
               }
             />
-            <InfoRow label="Status" value={user?.isVerified ? '✓ Verified' : 'Unverified'} />
+            <InfoRow label="Status" value={userData?.isVerified ? '✓ Verified' : 'Unverified'} />
           </div>
-          {!user?.isPremium && (
+          {!userData?.isPremium && (
             <button
               onClick={() => showToast({ message: 'Premium coming soon! 🚀', type: 'info' })}
               style={{

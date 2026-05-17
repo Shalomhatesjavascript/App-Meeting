@@ -33,7 +33,7 @@ describe('Matches Model DB Integration', () => {
   it('creates, fetches, and lists matches', async () => {
     const { createMatch, getMatchById, listMatchesForUser } = await import('./model')
 
-    const created = await createMatch({ user1Id: 1, user2Id: 2 })
+    const created = await createMatch({ user1Id: '1', user2Id: '2' })
     expect(created).toBeDefined()
     if (!created) {
       throw new Error('Expected match to be created')
@@ -42,8 +42,8 @@ describe('Matches Model DB Integration', () => {
     const byId = await getMatchById(created.id)
     expect(byId?.id).toBe(created.id)
 
-    const listForUser1 = await listMatchesForUser(1)
-    const listForUser3 = await listMatchesForUser(3)
+    const listForUser1 = await listMatchesForUser('1')
+    const listForUser3 = await listMatchesForUser('3')
 
     expect(listForUser1.length).toBe(1)
     expect(listForUser3.length).toBe(0)

@@ -2,23 +2,23 @@
 // Register Page
 // ============================================
 
+import { BabcockEmailSchema } from '@repo/shared'
+import type { ChangeEvent, CSSProperties, FormEvent } from 'react'
 import { useState } from 'react'
-import type { CSSProperties, ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { registerUser } from '../../api/auth'
+import * as v from 'valibot'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { RegisterSchema } from '@repo/shared'
-import * as v from 'valibot'
+import { useRegisterUserMutation } from '../../hooks/useAuthMutations'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { showToast } = useApp()
+  const registerMutation = useRegisterUserMutation()
 
   const [form, setForm] = useState({ confirmPassword: '', email: '', name: '', password: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
 
   const setField =
     (field: 'confirmPassword' | 'email' | 'name' | 'password') =>
@@ -28,16 +28,18 @@ export default function RegisterPage() {
     }
 
   const validate = () => {
-    const result = v.safeParse(RegisterSchema, form)
     const nextErrors: Record<string, string> = {}
+    if (form.name.trim().length < 2) {
+      nextErrors.name = 'Enter your full name'
+    }
 
-    if (!result.success) {
-      for (const issue of result.issues) {
-        const field = issue.path?.[0]?.key
-        if (typeof field === 'string' && !nextErrors[field]) {
-          nextErrors[field] = issue.message
-        }
-      }
+    const emailResult = v.safeParse(BabcockEmailSchema, form.email)
+    if (!emailResult.success) {
+      nextErrors.email = emailResult.issues[0]?.message || 'Enter a valid university email'
+    }
+
+    if (form.password.length < 8) {
+      nextErrors.password = 'Password must be at least 8 characters'
     }
 
     if (form.password !== form.confirmPassword) {
@@ -55,10 +57,9 @@ export default function RegisterPage() {
       return
     }
     setErrors({})
-    setLoading(true)
 
     try {
-      await registerUser({
+      await registerMutation.mutateAsync({
         email: form.email,
         name: form.name,
         password: form.password,
@@ -77,10 +78,10 @@ export default function RegisterPage() {
         message: err instanceof Error ? err.message : 'Registration failed',
         type: 'error',
       })
-    } finally {
-      setLoading(false)
     }
   }
+
+  const loading = registerMutation.isPending
 
   const passwordStrength = getPasswordStrength(form.password)
 

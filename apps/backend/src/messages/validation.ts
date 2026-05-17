@@ -9,5 +9,7 @@ export const MessageQuerySchema = v.object({
 })
 export type MessageQueryOutput = v.InferOutput<typeof MessageQuerySchema>
 
-export const MessageInsertSchema = createInsertSchema(MessageTable)
+export const MessageInsertSchema = createInsertSchema(MessageTable, {
+  senderId: (schema) => v.optional(schema),
+})
 export const MessageUpdateSchema = createUpdateSchema(MessageTable)

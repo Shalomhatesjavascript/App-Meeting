@@ -1,6 +1,5 @@
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { toRouteError } from '../shared/route-error'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema, StringIdParamsSchema } from '../shared/schema'
 import { isUserAdminOrSelf } from '../user/model'
@@ -15,18 +14,13 @@ const likesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Likes })
   .post(
     '/',
     async ({ body, user, status }) => {
-      try {
-        const currentUserId = String(user.id)
-        if (!(await isUserAdminOrSelf(db, body.fromUserId, currentUserId))) {
-          return status(403, { error: 'Access denied' })
-        }
-
-        const result = await createOrUpdateLike(db, body)
-        return result
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to create like')
-        return status(routeError.status, routeError.body)
+      const currentUserId = String(user.id)
+      if (!(await isUserAdminOrSelf(db, body.fromUserId, currentUserId))) {
+        return status(403, { error: 'Access denied' })
       }
+
+      const result = await createOrUpdateLike(db, body)
+      return result
     },
     { auth: true, body: LikeInsertSchema },
   )
@@ -34,19 +28,14 @@ const likesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Likes })
   .get(
     '/mutual',
     async ({ query, user, status }) => {
-      try {
-        const currentUserId = String(user.id)
-        const requestedUser = query.id != null ? String(query.id) : currentUserId
+      const currentUserId = String(user.id)
+      const requestedUser = query.id != null ? String(query.id) : currentUserId
 
-        if (!(await isUserAdminOrSelf(db, requestedUser, currentUserId))) {
-          return status(403, { error: 'Access denied' })
-        }
-        const likes = await getMutualLikes(db, requestedUser)
-        return likes
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to get mutual likes')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdminOrSelf(db, requestedUser, currentUserId))) {
+        return status(403, { error: 'Access denied' })
       }
+      const likes = await getMutualLikes(db, requestedUser)
+      return likes
     },
     {
       auth: true,
@@ -62,16 +51,11 @@ const likesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Likes })
   .get(
     '/:id',
     async ({ params: { id }, status }) => {
-      try {
-        const like = await getLikeById(db, id)
-        if (!like) {
-          return status(404, { error: 'Like not found' })
-        }
-        return like
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch like')
-        return status(routeError.status, routeError.body)
+      const like = await getLikeById(db, id)
+      if (!like) {
+        return status(404, { error: 'Like not found' })
       }
+      return like
     },
     { auth: true, params: NumberIdParamsSchema },
   )
@@ -79,19 +63,14 @@ const likesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Likes })
   .get(
     '/',
     async ({ query, user, status }) => {
-      try {
-        const requestedUser = query.id ?? user.id
+      const requestedUser = query.id ?? user.id
 
-        if (!(await isUserAdminOrSelf(db, requestedUser, user.id))) {
-          return status(403, { error: 'Access denied' })
-        }
-
-        const likes = await getLikesForUser(db, requestedUser, query.type)
-        return likes
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to list likes')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdminOrSelf(db, requestedUser, user.id))) {
+        return status(403, { error: 'Access denied' })
       }
+
+      const likes = await getLikesForUser(db, requestedUser, query.type)
+      return likes
     },
     {
       auth: true,

@@ -2,24 +2,24 @@
 // Login Page
 // ============================================
 
-import { useState } from 'react'
+import { BabcockEmailSchema } from '@repo/shared'
 import type { CSSProperties, FormEvent } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { sendSignInCode } from '../../api/auth'
+import * as v from 'valibot'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { BabcockEmailSchema } from '@repo/shared'
-import * as v from 'valibot'
+import { useSendSignInCodeMutation } from '../../hooks/useAuthMutations'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { showToast } = useApp()
+  const sendSignInCodeMutation = useSendSignInCodeMutation()
 
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(false)
 
   const validate = (): Record<string, string> => {
     const result = v.safeParse(BabcockEmailSchema, email)
@@ -36,10 +36,9 @@ export default function LoginPage() {
       return
     }
     setErrors({})
-    setLoading(true)
 
     try {
-      await sendSignInCode({ email })
+      await sendSignInCodeMutation.mutateAsync({ email })
       showToast({ message: 'We sent a sign-in code to your email.', type: 'success' })
       navigate('/verify-email', {
         replace: true,
@@ -54,10 +53,10 @@ export default function LoginPage() {
         message: err instanceof Error ? err.message : 'Failed to send sign-in code',
         type: 'error',
       })
-    } finally {
-      setLoading(false)
     }
   }
+
+  const loading = sendSignInCodeMutation.isPending
 
   return (
     <div style={pageStyle}>

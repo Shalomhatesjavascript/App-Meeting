@@ -1,53 +1,7 @@
-import type { DiscoveryCandidate, MessageSelectDB } from '@repo/backend'
-import type { ProfileCreateInput, ProfileUpdateInput } from '@repo/shared'
+import type { ProfileSelectDB } from '@repo/backend'
 
-export type AvatarStyle =
-  | ('notionists' | 'fun-emoji' | 'adventurer' | 'big-smile' | 'lorelei' | 'personas')
-  | (string & {})
-
-export type AvatarChoice = Readonly<{
-  seed: string
-  style: AvatarStyle
-}>
-
-export type FrontendProfile = Readonly<{
-  alias: string
-  avatarSeed: string
-  avatarStyle: AvatarStyle
-  bio: string
-  department: string
-  fullName: string
-  gender: string
-  intent: string
-  interests: string[]
-  isIdVerified: boolean
-  level: number
-  userId: string
-}>
-
-export type ProfileFormValues = Partial<ProfileCreateInput> &
-  Readonly<{
-    interests?: string[]
-  }>
-
-export type ProfileUpdateValues = Partial<ProfileUpdateInput> &
-  Readonly<{
-    interests?: string[]
-  }>
-
-export type SessionRole = 'free' | 'premium' | 'admin'
-
-export type SessionUser = Readonly<{
-  createdAt: string
-  email: string
-  id: string | number | null
-  isPremium: boolean
-  isVerified: boolean
-  name: string
-  profile: FrontendProfile | null
-  profileComplete: boolean
-  role: SessionRole
-}>
+export type AvatarChoice = Pick<ProfileSelectDB, 'avatarSeed' | 'avatarStyle'>
+export type AvatarStyle = AvatarChoice['avatarStyle']
 
 export type ToastType = 'error' | 'info' | 'success' | 'warning'
 
@@ -57,9 +11,28 @@ export type ToastState = Readonly<{
   type: ToastType
 }>
 
+export type FrontendProfile = Readonly<ProfileSelectDB & { interests: string[] }>
+
+export type ProfileFormValues = Readonly<{
+  alias: string
+  avatarSeed: string
+  avatarStyle: ProfileSelectDB['avatarStyle']
+  bio: string
+  department: string
+  fullName: string
+  gender: ProfileSelectDB['gender']
+  intent: ProfileSelectDB['intent']
+  interests: string[]
+  isIdVerified: boolean
+  level: ProfileSelectDB['level']
+  userId?: string
+}>
+
+export type ProfileUpdateValues = Partial<ProfileFormValues>
+
 export type DiscoverCard = Readonly<{
   avatarSeed: string
-  avatarStyle: AvatarStyle
+  avatarStyle: AvatarChoice['avatarStyle']
   bio: string
   department: string
   id: string
@@ -67,6 +40,7 @@ export type DiscoverCard = Readonly<{
   interestNames: string[]
   isVerified: boolean
   level: number
+
   matchScore?: number
   name: string
 }>
@@ -78,6 +52,7 @@ export type ChatMessage = Readonly<{
   timestamp: string
 }>
 
+// TODO: base off backend types
 export type MatchCard = Readonly<{
   id: string
   lastMessage: string | null
@@ -86,7 +61,8 @@ export type MatchCard = Readonly<{
   unread: number
   user: {
     avatarSeed: string
-    avatarStyle: AvatarStyle
+    avatarStyle: AvatarChoice['avatarStyle']
+    bio?: string
     department: string
     id: string
     intent: string
@@ -96,7 +72,3 @@ export type MatchCard = Readonly<{
   }
   userId: string
 }>
-
-export type DiscoverCandidateRow = DiscoveryCandidate
-
-export type BackendMessageRow = MessageSelectDB

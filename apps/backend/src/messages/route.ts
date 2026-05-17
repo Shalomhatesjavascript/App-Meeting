@@ -1,7 +1,6 @@
 import { PositiveIntSchema } from '@repo/shared'
 import { Elysia } from 'elysia'
 import * as v from 'valibot'
-import { toRouteError } from '../shared/route-error'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema } from '../shared/schema'
 import { isUserAdminOrSelf } from '../user/model'
@@ -14,6 +13,7 @@ import {
   markMessageAsRead,
 } from './model'
 import { MessageInsertSchema, MessageQuerySchema } from './validation'
+import type { MessageInsertDB } from './schema'
 
 const MatchIdParamsSchema = v.object({ match_id: PositiveIntSchema })
 
@@ -22,21 +22,16 @@ const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
   .use(betterAuthRoute)
   // Get all messages for a match for a user
   .get(
-    '/:match_id',
+    '/match/:match_id',
     async ({ params, query, user, status }) => {
-      try {
-        const allowed = await canReadMatchMessages(params.match_id, user.id)
-        if (!allowed) {
-          return status(403, { error: 'Access denied' })
-        }
-
-        const messages = await getMessagesForMatch({ limit: query.limit, matchId: params.match_id })
-
-        return messages
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch messages')
-        return status(routeError.status, routeError.body)
+      const allowed = await canReadMatchMessages(params.match_id, user.id)
+      if (!allowed) {
+        return status(403, { error: 'Access denied' })
       }
+
+      const messages = await getMessagesForMatch({ limit: query.limit, matchId: params.match_id })
+
+      return messages
     },
     { auth: true, params: MatchIdParamsSchema, query: MessageQuerySchema },
   )
@@ -44,17 +39,14 @@ const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
   .post(
     '/',
     async ({ body, user, status }) => {
-      try {
-        if (!(await isUserAdminOrSelf(db, body.senderId, user.id))) {
-          return status(403, { error: 'Access denied' })
-        }
+      const payload: MessageInsertDB = { ...body, senderId: body.senderId ?? user.id }
 
-        const message = await createMessage(body)
-        return message
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to send message')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdminOrSelf(db, payload.senderId, user.id))) {
+        return status(403, { error: 'Access denied' })
       }
+
+      const message = await createMessage(payload)
+      return message
     },
     { auth: true, body: MessageInsertSchema },
   )
@@ -62,18 +54,13 @@ const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
   .post(
     '/:id/read',
     async ({ params, user, status }) => {
-      try {
-        const updated = await markMessageAsRead(params.id, user.id)
+      const updated = await markMessageAsRead(params.id, user.id)
 
-        if (!updated) {
-          return status(404, { error: 'Message not found' })
-        }
-
-        return updated
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to update message')
-        return status(routeError.status, routeError.body)
+      if (!updated) {
+        return status(404, { error: 'Message not found' })
       }
+
+      return updated
     },
     {
       auth: true,

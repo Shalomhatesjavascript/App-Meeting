@@ -1,6 +1,6 @@
+import type { ProfileSelectDB } from '@repo/backend'
 import type { CSSProperties } from 'react'
-import type { AvatarStyle } from '../types'
-import { getAvatarUrl } from '../utils/mockData'
+import { getAvatarUrl } from '../shared/catalog'
 
 export type AvatarProps = Readonly<{
   borderColor?: string
@@ -9,7 +9,7 @@ export type AvatarProps = Readonly<{
   seed?: string
   showRing?: boolean
   size?: number
-  style?: AvatarStyle
+  style?: ProfileSelectDB['avatarStyle']
 }>
 
 export function Avatar({

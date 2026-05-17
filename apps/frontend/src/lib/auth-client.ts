@@ -1,5 +1,5 @@
-import { createAuthClient } from 'better-auth/react'
 import { emailOTPClient } from 'better-auth/client/plugins'
+import { createAuthClient } from 'better-auth/react'
 import { frontendEnv } from '../env'
 
 const baseAuthUrl =
@@ -7,8 +7,8 @@ const baseAuthUrl =
 
 export const authClient = createAuthClient({
   baseURL: baseAuthUrl,
-  plugins: [emailOTPClient()],
   fetchOptions: {
     credentials: 'include',
   },
+  plugins: [emailOTPClient()],
 })

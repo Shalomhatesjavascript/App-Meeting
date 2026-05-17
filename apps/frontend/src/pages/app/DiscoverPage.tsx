@@ -2,60 +2,78 @@
 // Discover Page — Swipe-based discovery
 // ============================================
 
-import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { getDiscoveryCandidates, swipeUser } from '../../api/matches'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '../../components/Avatar'
 import { BottomNav } from '../../components/BottomNav'
 import { IntentBadge, VerifiedBadge } from '../../components/ui/Badge'
 import { useApp } from '../../context/AppContext'
-import type { DiscoverCard } from '../../types'
+import { useDiscoveryCandidatesQuery, useSwipeUserMutation } from '../../hooks/useDiscovery'
+import { useUserQuery } from '../../hooks/useUser'
 
 export default function DiscoverPage() {
   const { showMatch, showToast } = useApp()
-  const [users, setUsers] = useState<DiscoverCard[]>([])
+  const discoveryQuery = useDiscoveryCandidatesQuery()
+  const swipeMutation = useSwipeUserMutation()
+  const viewerQuery = useUserQuery()
+
+  const users = discoveryQuery.data || []
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [loading, setLoading] = useState(true)
   const [swiping, setSwiping] = useState<'left' | 'right' | null>(null)
   const [expanded, setExpanded] = useState(false)
   const cardRef = useRef<HTMLDivElement | null>(null)
 
-  const loadUsers = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await getDiscoveryCandidates()
-      setUsers(data)
-    } catch {
+  useEffect(() => {
+    if (discoveryQuery.isError) {
       showToast({ message: 'Failed to load profiles', type: 'error' })
-    } finally {
-      setLoading(false)
     }
-  }, [showToast])
+  }, [discoveryQuery.isError, showToast])
 
   useEffect(() => {
-    loadUsers()
-  }, [loadUsers])
+    if (currentIndex >= users.length) {
+      setCurrentIndex(0)
+    }
+  }, [currentIndex, users.length])
 
   const currentUser = users[currentIndex]
+  const viewerUserId = viewerQuery.data?.id
+  const bio = currentUser?.bio ?? ''
 
   const handleSwipe = async (action: 'like' | 'pass') => {
-    if (!currentUser || swiping) return
+    if (!currentUser || !viewerUserId || swiping) return
     setSwiping(action === 'like' ? 'right' : 'left')
 
     try {
-      const result = await swipeUser({ action, userId: currentUser.id })
+      const result = await swipeMutation.mutateAsync({
+        fromUserId: viewerUserId,
+        isLike: action === 'like',
+        toUserId: currentUser.id,
+      })
       setTimeout(async () => {
         setSwiping(null)
         setExpanded(false)
         setCurrentIndex((i) => i + 1)
-        if (result.matched) {
-          showMatch(currentUser)
+        if (result?.match) {
+          showMatch({
+            avatarSeed: currentUser.avatarSeed,
+            avatarStyle: currentUser.avatarStyle,
+            bio: currentUser.bio ?? undefined,
+            department: currentUser.department,
+            id: currentUser.id,
+            intent: currentUser.intent,
+            isVerified: currentUser.isVerified,
+            level: currentUser.level,
+            name: currentUser.name,
+          })
         }
       }, 350)
     } catch {
       setSwiping(null)
+      showToast({ message: 'Failed to process swipe', type: 'error' })
     }
   }
+
+  const loading = discoveryQuery.isLoading || discoveryQuery.isFetching
 
   if (loading) {
     return (
@@ -109,7 +127,10 @@ export default function DiscoverPage() {
             New profiles are added regularly. Check back soon or revisit your matches.
           </p>
           <button
-            onClick={loadUsers}
+            onClick={async () => {
+              await discoveryQuery.refetch()
+              setCurrentIndex(0)
+            }}
             style={{
               background: 'transparent',
               border: '2px solid var(--color-navy)',
@@ -130,7 +151,7 @@ export default function DiscoverPage() {
     )
   }
 
-  const cardStyle = {
+  const cardStyle: CSSProperties = {
     background: '#fff',
     borderRadius: 'var(--radius-xl)',
     boxShadow: 'var(--shadow-xl)',
@@ -257,10 +278,10 @@ export default function DiscoverPage() {
                   lineHeight: 1.75,
                 }}
               >
-                "{expanded ? currentUser.bio : currentUser.bio.slice(0, 160)}
-                {!expanded && currentUser.bio.length > 160 && <span>...</span>}"
+                "{expanded ? bio : bio.slice(0, 160)}
+                {!expanded && bio.length > 160 && <span>...</span>}"
               </p>
-              {currentUser.bio.length > 160 && (
+              {bio.length > 160 && (
                 <button
                   onClick={() => setExpanded((e) => !e)}
                   style={{
@@ -395,7 +416,7 @@ export default function DiscoverPage() {
         <div style={{ display: 'flex', gap: '6px' }}>
           {users.slice(0, Math.min(users.length, 6)).map((user, i) => (
             <div
-              key={user?.id || `dot-${i}`}
+              key={user.id}
               style={{
                 background: i === currentIndex ? 'var(--color-navy)' : 'var(--border-medium)',
                 borderRadius: 3,

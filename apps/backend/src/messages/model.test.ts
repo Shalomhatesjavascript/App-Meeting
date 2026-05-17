@@ -42,7 +42,7 @@ describe('Messages Model DB Integration', () => {
       },
     ])
 
-    await currentDb.insert(MatchesTable).values({ user1Id: 1, user2Id: 2 })
+    await currentDb.insert(MatchesTable).values({ user1Id: '1', user2Id: '2' })
   })
 
   it('creates message only for match participant', async () => {
@@ -51,7 +51,7 @@ describe('Messages Model DB Integration', () => {
     const created = await createMessage({
       content: 'hello',
       matchId: 1,
-      senderId: 1,
+      senderId: '1',
     })
 
     expect(created).toBeDefined()
@@ -64,7 +64,7 @@ describe('Messages Model DB Integration', () => {
       createMessage({
         content: 'not allowed',
         matchId: 1,
-        senderId: 3,
+        senderId: '3',
       }),
     ).rejects.toThrow('Sender is not a participant in this match')
   })
@@ -73,8 +73,8 @@ describe('Messages Model DB Integration', () => {
     const { canReadMatchMessages, createMessage, getMessagesForMatch, markMessageAsRead } =
       await import('./model')
 
-    const m1 = await createMessage({ content: 'first', matchId: 1, senderId: 1 })
-    const m2 = await createMessage({ content: 'second', matchId: 1, senderId: 2 })
+    const m1 = await createMessage({ content: 'first', matchId: 1, senderId: '1' })
+    const m2 = await createMessage({ content: 'second', matchId: 1, senderId: '2' })
     if (!m1 || !m2) {
       throw new Error('Expected seeded messages to be created')
     }
@@ -85,7 +85,7 @@ describe('Messages Model DB Integration', () => {
     const updated = await markMessageAsRead(m1.id)
     expect(updated?.isRead).toBe(true)
 
-    expect(await canReadMatchMessages(1, 1)).toBe(true)
-    expect(await canReadMatchMessages(1, 3)).toBe(false)
+    expect(await canReadMatchMessages(1, '1')).toBe(true)
+    expect(await canReadMatchMessages(1, '3')).toBe(false)
   })
 })

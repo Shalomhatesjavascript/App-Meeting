@@ -20,6 +20,6 @@
     "types": ["bun-types"],
     "verbatimModuleSyntax": true
   },
-  "exclude": ["dist", "node_modules"],
+  "exclude": ["dist", "node_modules", "src/**/__tests__", "src/**/*.test.ts"],
   "include": ["src/**/*.ts", "worker-configuration.d.ts"]
 }

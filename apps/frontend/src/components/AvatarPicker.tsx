@@ -1,6 +1,7 @@
-import type { AvatarChoice, AvatarStyle } from '../types'
+import type { ProfileSelectDB } from '@repo/backend'
 import { useState } from 'react'
-import { AVATAR_SEEDS, AVATAR_STYLES, getAvatarUrl } from '../utils/mockData'
+import { AVATAR_SEEDS, AVATAR_STYLES, getAvatarUrl } from '../shared/catalog'
+import type { AvatarChoice } from '../types'
 import { Button } from './ui/Button'
 
 type AvatarPickerProps = Readonly<{
@@ -9,25 +10,26 @@ type AvatarPickerProps = Readonly<{
 }>
 
 export function AvatarPicker({ selected, onSelect }: AvatarPickerProps) {
-  const [activeStyle, setActiveStyle] = useState(selected?.style || 'notionists')
-  const [activeSeed, setActiveSeed] = useState(selected?.seed || 'felix')
+  const [activeStyle, setActiveStyle] = useState(selected?.avatarStyle || 'notionists')
+  const [activeSeed, setActiveSeed] = useState(selected?.avatarSeed || 'felix')
 
-  const handleStyleChange = (style: AvatarStyle) => {
+  const handleStyleChange = (style: ProfileSelectDB['avatarStyle']) => {
     setActiveStyle(style)
-    onSelect({ seed: activeSeed, style })
+    onSelect({ avatarSeed: activeSeed, avatarStyle: style })
   }
 
   const handleSeedChange = (seed: string) => {
     setActiveSeed(seed)
-    onSelect({ seed, style: activeStyle })
+    onSelect({ avatarSeed: seed, avatarStyle: activeStyle })
   }
 
   const handleRandomize = () => {
-    const randomStyle = AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)].id
-    const randomSeed = AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)]
+    const styleEntry = AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)]
+    const randomStyle = styleEntry?.id ?? 'notionists'
+    const randomSeed = AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)] || 'felix'
     setActiveStyle(randomStyle)
     setActiveSeed(randomSeed)
-    onSelect({ seed: randomSeed, style: randomStyle })
+    onSelect({ avatarSeed: randomSeed, avatarStyle: randomStyle })
   }
 
   return (

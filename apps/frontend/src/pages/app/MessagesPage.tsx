@@ -2,13 +2,13 @@
 // Messages Page — List & Chat view
 // ============================================
 
-import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getMatches, getMessages, sendMessage } from '../../api/matches'
 import { Avatar } from '../../components/Avatar'
 import { BottomNav } from '../../components/BottomNav'
 import { useApp } from '../../context/AppContext'
+import { useMatchesQuery, useMessagesQuery, useSendMessageMutation } from '../../hooks/useMatches'
 import type { ChatMessage, MatchCard } from '../../types'
 
 export default function MessagesPage() {
@@ -26,15 +26,15 @@ export default function MessagesPage() {
 function MessagesList() {
   const navigate = useNavigate()
   const { showToast } = useApp()
-  const [matches, setMatches] = useState<MatchCard[]>([])
-  const [loading, setLoading] = useState(true)
+  const matchesQuery = useMatchesQuery()
+  const matches = matchesQuery.data || []
+  const loading = matchesQuery.isLoading
 
   useEffect(() => {
-    getMatches()
-      .then(setMatches)
-      .catch(() => showToast({ message: 'Failed to load messages', type: 'error' }))
-      .finally(() => setLoading(false))
-  }, [showToast])
+    if (matchesQuery.isError) {
+      showToast({ message: 'Failed to load messages', type: 'error' })
+    }
+  }, [matchesQuery.isError, showToast])
 
   return (
     <div style={pageStyle}>
@@ -187,30 +187,34 @@ type ChatViewProps = Readonly<{
 
 function ChatView({ matchId, onBack }: ChatViewProps) {
   const { showToast } = useApp()
+  const numericMatchId = Number(matchId)
+  const hasValidMatchId = Number.isFinite(numericMatchId)
+  const matchesQuery = useMatchesQuery()
+  const messagesQuery = useMessagesQuery(numericMatchId, hasValidMatchId)
+  const sendMessageMutation = useSendMessageMutation(numericMatchId)
+
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [matchUser, setMatchUser] = useState<MatchCard['user'] | null>(null)
   const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
-  const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const loadData = useCallback(async () => {
-    try {
-      const [allMatches, msgs] = await Promise.all([getMatches(), getMessages(matchId)])
-      const match = allMatches.find((m) => m.id === matchId)
-      setMatchUser(match?.user || null)
-      setMessages(msgs)
-    } catch {
+  useEffect(() => {
+    if (matchesQuery.isError || messagesQuery.isError) {
       showToast({ message: 'Failed to load conversation', type: 'error' })
-    } finally {
-      setLoading(false)
     }
-  }, [matchId, showToast])
+  }, [matchesQuery.isError, messagesQuery.isError, showToast])
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (messagesQuery.data) {
+      setMessages(messagesQuery.data)
+    }
+  }, [messagesQuery.data])
+
+  const matchUser = useMemo<MatchCard['user'] | null>(() => {
+    if (!matchesQuery.data) return null
+    const match = matchesQuery.data.find((entry) => entry.id === matchId)
+    return match?.user || null
+  }, [matchId, matchesQuery.data])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -218,10 +222,9 @@ function ChatView({ matchId, onBack }: ChatViewProps) {
 
   const handleSend = async (e?: { preventDefault: () => void }) => {
     e?.preventDefault()
-    if (!text.trim() || sending) return
+    if (!text.trim() || sendMessageMutation.isPending || !hasValidMatchId) return
     const messageText = text.trim()
     setText('')
-    setSending(true)
 
     // Optimistic update
     const optimistic: ChatMessage = {
@@ -233,17 +236,18 @@ function ChatView({ matchId, onBack }: ChatViewProps) {
     setMessages((prev) => [...prev, optimistic])
 
     try {
-      const { message } = await sendMessage({ matchId, text: messageText })
+      const { message } = await sendMessageMutation.mutateAsync({ text: messageText })
       setMessages((prev) => prev.map((m) => (m.id === optimistic.id ? message : m)))
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
       showToast({ message: 'Failed to send message', type: 'error' })
       setText(messageText)
     } finally {
-      setSending(false)
       inputRef.current?.focus()
     }
   }
+
+  const loading = matchesQuery.isLoading || messagesQuery.isLoading
 
   return (
     <div
@@ -460,7 +464,7 @@ function ChatView({ matchId, onBack }: ChatViewProps) {
           />
         </div>
         <button
-          disabled={!text.trim() || sending}
+          disabled={!text.trim() || sendMessageMutation.isPending}
           onClick={handleSend}
           style={{
             alignItems: 'center',

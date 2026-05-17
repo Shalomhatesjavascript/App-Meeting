@@ -1,6 +1,5 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -13,6 +12,9 @@
         "*.tsbuildinfo"
       ]
     },
+    "clean": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -21,16 +23,14 @@
       "dependsOn": ["^lint"],
       "outputs": []
     },
-    "typecheck": {
-      "dependsOn": ["^typecheck"],
-      "outputs": []
-    },
     "test": {
       "dependsOn": ["^test"],
       "outputs": ["coverage/**"]
     },
-    "clean": {
-      "cache": false
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
     }
-  }
+  },
+  "ui": "tui"
 }

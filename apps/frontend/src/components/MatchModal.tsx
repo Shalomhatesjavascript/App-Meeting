@@ -1,14 +1,13 @@
-import type { DiscoverCard } from '../types'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { useAuth } from '../context/AuthContext'
 import { Avatar } from './Avatar'
 import { Button } from './ui/Button'
+import { useUserQuery } from '../hooks/useUser'
 
 export function MatchModal() {
   const { matchModal, dismissMatch } = useApp()
-  const { user } = useAuth()
+  const { data: userData } = useUserQuery()
   const navigate = useNavigate()
   const sparkleKeys = Array.from({ length: 20 }, (_, index) => `sparkle-${index}`)
 
@@ -16,6 +15,7 @@ export function MatchModal() {
     if (matchModal) {
       document.body.style.overflow = 'hidden'
     }
+
     return () => {
       document.body.style.overflow = ''
     }
@@ -23,7 +23,7 @@ export function MatchModal() {
 
   if (!matchModal) return null
 
-  const { user: matchedUser } = matchModal as Readonly<{ user: DiscoverCard }>
+  const { user: matchedUser } = matchModal
 
   const handleMessage = () => {
     dismissMatch()
@@ -113,13 +113,13 @@ export function MatchModal() {
         >
           <Avatar
             borderColor="var(--color-amber)"
-            seed={user?.profile?.avatarSeed || 'default'}
+            seed={userData?.profile?.avatarSeed || 'default'}
             showRing
             size={96}
-            style={user?.profile?.avatarStyle || 'notionists'}
+            style={userData?.profile?.avatarStyle || 'notionists'}
           />
           <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8125rem', fontWeight: 500 }}>
-            {user?.name?.split(' ')[0] || 'You'}
+            {userData?.name?.split(' ')[0] || 'You'}
           </span>
         </div>
 

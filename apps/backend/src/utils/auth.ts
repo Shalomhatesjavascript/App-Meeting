@@ -4,12 +4,12 @@ import { emailOTP } from 'better-auth/plugins'
 import Elysia from 'elysia'
 import * as v from 'valibot'
 import { EmailService } from '../shared/email'
+import { BackendEnv } from '../shared/env'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { EmailSchema } from '../shared/schema'
 import { UserMetaTable } from '../user/schema'
 import * as authSchema from './auth/schema'
 import { db } from './db'
-import { BackendEnv } from '../shared/env'
 
 export const auth = betterAuth({
   // Auth will be mounted at the app level under the '/api/better-auth' prefix.
@@ -30,12 +30,12 @@ export const auth = betterAuth({
       },
     },
   },
-  emailVerification: {
-    autoSignInAfterVerification: true,
-  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+  },
+  emailVerification: {
+    autoSignInAfterVerification: true,
   },
   plugins: [
     emailOTP({

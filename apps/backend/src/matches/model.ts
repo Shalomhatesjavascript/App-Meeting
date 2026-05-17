@@ -2,8 +2,13 @@ import { eq, or } from 'drizzle-orm'
 import { db } from '../utils/db'
 import { MatchesTable, type MatchInsertDB } from './schema'
 
-export const createMatch = async (input: MatchInsertDB) => {
-  const [created] = await db.insert(MatchesTable).values(input).returning()
+export const createMatch = async (input: MatchInsertDB | any) => {
+  const payload = {
+    ...input,
+    user1Id: String((input as any).user1Id),
+    user2Id: String((input as any).user2Id),
+  }
+  const [created] = await db.insert(MatchesTable).values(payload).returning()
   return created
 }
 

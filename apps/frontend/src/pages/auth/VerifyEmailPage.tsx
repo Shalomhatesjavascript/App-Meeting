@@ -1,19 +1,18 @@
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import { BabcockEmailSchema } from '@repo/shared'
-import {
-  getPendingOtp,
-  resendVerificationCode,
-  sendSignInCode,
-  verifyEmailCode,
-  verifySignInCode,
-} from '../../api/auth'
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import * as v from 'valibot'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { useAuth } from '../../context/AuthContext'
-import * as v from 'valibot'
+import {
+  useResendVerificationCodeMutation,
+  useSendSignInCodeMutation,
+  useVerifyEmailCodeMutation,
+  useVerifySignInCodeMutation,
+} from '../../hooks/useAuthMutations'
+import backendApi from '../../server/eden-treaty'
 
 type VerifyLocationState = Readonly<{
   email?: string
@@ -25,20 +24,20 @@ type VerifyLocationState = Readonly<{
 export default function VerifyEmailPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { login } = useAuth()
   const { showToast } = useApp()
+  const sendSignInCodeMutation = useSendSignInCodeMutation()
+  const resendVerificationCodeMutation = useResendVerificationCodeMutation()
+  const verifySignInCodeMutation = useVerifySignInCodeMutation()
+  const verifyEmailCodeMutation = useVerifyEmailCodeMutation()
 
   const locationState = (location.state || {}) as VerifyLocationState
 
-  const pendingOtp = getPendingOtp()
-  const initialEmail = locationState.email || pendingOtp?.email || ''
-  const initialType = locationState.type || pendingOtp?.type || 'email-verification'
+  const initialEmail = locationState.email || ''
+  const initialType = locationState.type || 'email-verification'
 
   const [email, setEmail] = useState(initialEmail)
   const [otp, setOtp] = useState('')
   const [type, setType] = useState(initialType)
-  const [loading, setLoading] = useState(false)
-  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -61,13 +60,12 @@ export default function VerifyEmailPage() {
     }
 
     setError('')
-    setSending(true)
 
     try {
       if (isSignIn) {
-        await sendSignInCode({ email })
+        await sendSignInCodeMutation.mutateAsync({ email })
       } else {
-        await resendVerificationCode({ email })
+        await resendVerificationCodeMutation.mutateAsync({ email })
       }
 
       showToast({
@@ -78,8 +76,6 @@ export default function VerifyEmailPage() {
       const message = err instanceof Error ? err.message : 'Failed to resend verification code'
       setError(message)
       showToast({ message, type: 'error' })
-    } finally {
-      setSending(false)
     }
   }
 
@@ -98,16 +94,23 @@ export default function VerifyEmailPage() {
     }
 
     setError('')
-    setLoading(true)
 
     try {
-      const result = isSignIn
-        ? await verifySignInCode({ email, otp: otp.trim() })
-        : await verifyEmailCode({ email, otp: otp.trim() })
+      if (isSignIn) {
+        await verifySignInCodeMutation.mutateAsync({ email, otp: otp.trim() })
+      } else {
+        await verifyEmailCodeMutation.mutateAsync({ email, otp: otp.trim() })
+      }
 
-      login(result.user)
+      let profile = null
+      try {
+        const response = await backendApi.api.profiles.me.get()
+        profile = response.data
+      } catch {
+        profile = null
+      }
 
-      if (!result.user.profileComplete) {
+      if (!profile) {
         navigate('/setup-profile', { replace: true })
       } else {
         navigate('/app/discover', { replace: true })
@@ -119,10 +122,11 @@ export default function VerifyEmailPage() {
         message,
         type: 'error',
       })
-    } finally {
-      setLoading(false)
     }
   }
+
+  const loading = verifySignInCodeMutation.isPending || verifyEmailCodeMutation.isPending
+  const sending = sendSignInCodeMutation.isPending || resendVerificationCodeMutation.isPending
 
   const heading = isSignIn ? 'Enter your sign-in code' : 'Verify your email'
   const description = isSignIn

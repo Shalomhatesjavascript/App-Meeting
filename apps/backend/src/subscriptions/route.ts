@@ -1,5 +1,4 @@
 import { Elysia } from 'elysia'
-import { toRouteError } from '../shared/route-error'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema, StringIdParamsSchema } from '../shared/schema'
 import { isUserAdmin } from '../user/model'
@@ -21,17 +20,12 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .get(
     '/',
     async ({ user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-
-        const subscriptions = await listSubscriptions(db)
-        return subscriptions
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to list subscriptions')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+
+      const subscriptions = await listSubscriptions(db)
+      return subscriptions
     },
     { auth: true },
   )
@@ -39,16 +33,11 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .get(
     '/me',
     async ({ user, status }) => {
-      try {
-        const subscription = await getSubscriptionByUserId(db, user.id)
-        if (!subscription) {
-          return status(404, { error: 'Subscription not found' })
-        }
-        return subscription
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch subscription')
-        return status(routeError.status, routeError.body)
+      const subscription = await getSubscriptionByUserId(db, user.id)
+      if (!subscription) {
+        return status(404, { error: 'Subscription not found' })
       }
+      return subscription
     },
     { auth: true },
   )
@@ -56,19 +45,14 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .get(
     '/:id',
     async ({ params, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-        const subscription = await getSubscriptionByUserId(db, params.id)
-        if (!subscription) {
-          return status(404, { error: 'Subscription not found' })
-        }
-        return subscription
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch subscription')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+      const subscription = await getSubscriptionByUserId(db, params.id)
+      if (!subscription) {
+        return status(404, { error: 'Subscription not found' })
+      }
+      return subscription
     },
     { auth: true, params: StringIdParamsSchema },
   )
@@ -76,19 +60,14 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .post(
     '/',
     async ({ body, user, status }) => {
-      try {
-        const targetUserId = String(body.userId)
-        if (user.id !== targetUserId && !(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Access denied' })
-        }
+      const targetUserId = String(body.userId)
+      if (user.id !== targetUserId && !(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Access denied' })
+      }
 
-        const created = await createSubscription(db, body)
-        return {
-          data: created,
-        }
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to create subscription')
-        return status(routeError.status, routeError.body)
+      const created = await createSubscription(db, body)
+      return {
+        data: created,
       }
     },
     { auth: true, body: SubscriptionInsertSchema },
@@ -97,22 +76,17 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .patch(
     '/:id',
     async ({ params: { id }, body, user, status }) => {
-      try {
-        const existing = await getSubscriptionById(db, id)
-        if (!existing) {
-          return status(404, { error: 'Subscription not found' })
-        }
-        if (user.id !== String(existing.userId) && !(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Access denied' })
-        }
+      const existing = await getSubscriptionById(db, id)
+      if (!existing) {
+        return status(404, { error: 'Subscription not found' })
+      }
+      if (user.id !== String(existing.userId) && !(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Access denied' })
+      }
 
-        const updated = await updateSubscription(db, id, body)
-        return {
-          data: updated,
-        }
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to update subscription')
-        return status(routeError.status, routeError.body)
+      const updated = await updateSubscription(db, id, body)
+      return {
+        data: updated,
       }
     },
     { auth: true, body: SubscriptionUpdateSchema, params: NumberIdParamsSchema },
@@ -121,21 +95,16 @@ const subscriptionsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Subscription
   .delete(
     '/:id',
     async ({ params: { id }, user, status }) => {
-      try {
-        const existing = await getSubscriptionById(db, id)
-        if (!existing) {
-          return status(404, { error: 'Subscription not found' })
-        }
-        if (user.id !== String(existing.userId) && !(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Access denied' })
-        }
-
-        await deleteSubscription(db, id)
-        return { success: true }
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to delete subscription')
-        return status(routeError.status, routeError.body)
+      const existing = await getSubscriptionById(db, id)
+      if (!existing) {
+        return status(404, { error: 'Subscription not found' })
       }
+      if (user.id !== String(existing.userId) && !(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Access denied' })
+      }
+
+      await deleteSubscription(db, id)
+      return { success: true }
     },
     { auth: true, params: NumberIdParamsSchema },
   )

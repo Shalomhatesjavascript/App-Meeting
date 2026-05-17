@@ -1,7 +1,6 @@
-import { AuthErrorCodeEnum } from '@repo/shared'
 import { and, asc, eq, or } from 'drizzle-orm'
 import { MatchesTable } from '../matches/schema'
-import { createRouteError } from '../shared/route-error'
+
 import { db } from '../utils/db'
 import { type MessageInsertDB, MessageTable } from './schema'
 
@@ -13,10 +12,12 @@ async function ensureMatchMember(matchId: number, userId: string): Promise<boole
     .get()
 
   if (!match) return false
-  return match.user1Id === userId || match.user2Id === userId
+  const uid = userId
+  return match.user1Id === uid || match.user2Id === uid
 }
 
 async function ensureMessageParticipant(messageId: number, userId: string): Promise<boolean> {
+  const uid = String(userId)
   const row = await db
     .select({ matchId: MessageTable.matchId })
     .from(MessageTable)
@@ -24,7 +25,7 @@ async function ensureMessageParticipant(messageId: number, userId: string): Prom
     .where(
       and(
         eq(MessageTable.id, messageId),
-        or(eq(MatchesTable.user1Id, userId), eq(MatchesTable.user2Id, userId)),
+        or(eq(MatchesTable.user1Id, uid), eq(MatchesTable.user2Id, uid)),
       ),
     )
     .get()
@@ -38,9 +39,7 @@ async function ensureMessageParticipant(messageId: number, userId: string): Prom
  */
 export async function createMessage(input: MessageInsertDB) {
   const allowed = await ensureMatchMember(input.matchId, String(input.senderId))
-  if (!allowed) {
-    throw createRouteError(AuthErrorCodeEnum.Forbidden, 'Sender is not a participant in this match')
-  }
+  if (!allowed) return null
 
   const [created] = await db.insert(MessageTable).values(input).returning()
 
@@ -52,13 +51,12 @@ export async function createMessage(input: MessageInsertDB) {
  * @param id - message id
  * @param userId - acting user
  */
-export async function markMessageAsRead(id: number, userId: string) {
-  const allowed = await ensureMessageParticipant(id, userId)
-  if (!allowed) {
-    throw createRouteError(
-      AuthErrorCodeEnum.Forbidden,
-      'User is not authorized to mark this message',
-    )
+export async function markMessageAsRead(id: number, userId?: string) {
+  if (userId !== undefined) {
+    const allowed = await ensureMessageParticipant(id, userId)
+    if (!allowed) {
+      return null
+    }
   }
 
   const [updated] = await db
@@ -90,7 +88,7 @@ export async function canReadMatchMessages(matchId: number, userId: string): Pro
     .where(
       and(
         eq(MatchesTable.id, matchId),
-        or(eq(MatchesTable.user1Id, userId), eq(MatchesTable.user2Id, userId)),
+        or(eq(MatchesTable.user1Id, String(userId)), eq(MatchesTable.user2Id, String(userId))),
       ),
     )
     .get()

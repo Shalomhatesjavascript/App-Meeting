@@ -2,7 +2,7 @@ import { AuthErrorCodeEnum } from '@repo/shared'
 import { and, eq, gte, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { type MatchSelectDB, MatchesTable as matchesTable } from '../matches/schema'
-import { createRouteError } from '../shared/route-error'
+
 import { SubscriptionTierEnum } from '../subscriptions/enum'
 import { SubscriptionsTable } from '../subscriptions/schema'
 import { UserMetaRoleEnum } from '../user/enum'

@@ -1,4 +1,4 @@
-import type { CSSProperties, MouseEventHandler, ReactNode } from 'react'
+import type { CSSProperties, MouseEvent, MouseEventHandler, ReactNode } from 'react'
 
 const variantStyles = {
   amber: {
@@ -94,20 +94,20 @@ export function Button({
       className={`btn ${className}`}
       disabled={disabled || loading}
       onClick={onClick}
-      onMouseDown={(e) => {
+      onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
         e.currentTarget.style.transform = 'scale(0.98)'
       }}
-      onMouseEnter={(e) => {
+      onMouseEnter={(e: MouseEvent<HTMLButtonElement>) => {
         if (!disabled && !loading) {
           e.currentTarget.style.filter = 'brightness(0.92)'
           e.currentTarget.style.transform = 'translateY(-1px)'
         }
       }}
-      onMouseLeave={(e) => {
+      onMouseLeave={(e: MouseEvent<HTMLButtonElement>) => {
         e.currentTarget.style.filter = ''
         e.currentTarget.style.transform = ''
       }}
-      onMouseUp={(e) => {
+      onMouseUp={(e: MouseEvent<HTMLButtonElement>) => {
         e.currentTarget.style.transform = 'translateY(-1px)'
       }}
       style={baseStyle}

@@ -1,5 +1,4 @@
 import { Elysia } from 'elysia'
-import { toRouteError } from '../shared/route-error'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema } from '../shared/schema'
 import { isUserAdmin } from '../user/model'
@@ -14,18 +13,13 @@ const adminLogsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.AdminLogs })
   .get(
     '/',
     async ({ user, query, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-
-        const logs = await listAdminLogs(query)
-
-        return logs
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to list logs')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+
+      const logs = await listAdminLogs(query)
+
+      return logs
     },
     { auth: true, query: AdminLogListQuerySchema },
   )
@@ -33,22 +27,17 @@ const adminLogsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.AdminLogs })
   .get(
     '/:id',
     async ({ params: { id }, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-
-        const log = await getAdminLogById(id)
-
-        if (!log) {
-          return status(404, { error: 'Log not found' })
-        }
-
-        return log
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch log')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+
+      const log = await getAdminLogById(id)
+
+      if (!log) {
+        return status(404, { error: 'Log not found' })
+      }
+
+      return log
     },
     { auth: true, params: NumberIdParamsSchema },
   )
@@ -56,16 +45,11 @@ const adminLogsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.AdminLogs })
   .post(
     '/',
     async ({ body, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-        const created = await createAdminLog(body)
-        return created
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to create log')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+      const created = await createAdminLog(body)
+      return created
     },
     { auth: true, body: AdminLogCreateSchema },
   )

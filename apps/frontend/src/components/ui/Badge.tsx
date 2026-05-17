@@ -58,8 +58,9 @@ export function IntentBadge({ intent }: Readonly<{ intent?: string }>) {
     networking: { color: 'navy', emoji: '🌐', label: 'Networking' },
     'study buddy': { color: 'lavender', emoji: '📚', label: 'Study Buddy' },
     study_buddy: { color: 'lavender', emoji: '📚', label: 'Study Buddy' },
+    studying: { color: 'lavender', emoji: '📚', label: 'Study Buddy' },
   }
-  const config = map[intent ?? ''] || map.friendship
+  const config = map[(intent ?? '').toLowerCase()] || map.friendship
   return (
     <Badge color={config.color} emoji={config.emoji}>
       {config.label}

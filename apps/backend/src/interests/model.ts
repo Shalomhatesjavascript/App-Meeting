@@ -35,5 +35,6 @@ export async function updateInterest(db: DB, id: number, data: InterestUpdateDB)
 }
 
 export async function deleteInterest(db: DB, id: number): Promise<void> {
-  return db.delete(InterestsTable).where(eq(InterestsTable.id, id)).run()
+  await db.delete(InterestsTable).where(eq(InterestsTable.id, id)).run()
+  return
 }

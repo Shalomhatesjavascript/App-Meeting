@@ -1,5 +1,4 @@
 import { Elysia } from 'elysia'
-import { toRouteError } from '../shared/route-error'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema } from '../shared/schema'
 import { isUserAdmin } from '../user/model'
@@ -19,15 +18,10 @@ const interestsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Interests })
   // Get all interests
   .get(
     '/',
-    async ({ status }) => {
-      try {
-        const interests = await getAllInterests(db)
+    async () => {
+      const interests = await getAllInterests(db)
 
-        return interests
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to list interests')
-        return status(routeError.status, routeError.body)
-      }
+      return interests
     },
     { auth: true },
   )
@@ -35,17 +29,12 @@ const interestsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Interests })
   .get(
     '/:id',
     async ({ params, status }) => {
-      try {
-        const interest = await getInterestById(db, params.id)
-        if (!interest) {
-          return status(404, { error: 'Interest not found' })
-        }
-
-        return interest
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to fetch interest')
-        return status(routeError.status, routeError.body)
+      const interest = await getInterestById(db, params.id)
+      if (!interest) {
+        return status(404, { error: 'Interest not found' })
       }
+
+      return interest
     },
     { auth: true, params: NumberIdParamsSchema },
   )
@@ -53,17 +42,12 @@ const interestsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Interests })
   .post(
     '/',
     async ({ body, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-        const created = await createInterest(db, body)
-
-        return created
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to create interest')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+      const created = await createInterest(db, body)
+
+      return created
     },
     { auth: true, body: InterestInsertSchema },
   )
@@ -71,22 +55,17 @@ const interestsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Interests })
   .put(
     '/:id',
     async ({ params, body, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-
-        const updated = await updateInterest(db, params.id, body)
-
-        if (!updated) {
-          return status(404, { error: 'Interest not found' })
-        }
-
-        return updated
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to update interest')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+
+      const updated = await updateInterest(db, params.id, body)
+
+      if (!updated) {
+        return status(404, { error: 'Interest not found' })
+      }
+
+      return updated
     },
     { auth: true, body: InterestUpdateSchema, params: NumberIdParamsSchema },
   )
@@ -94,18 +73,13 @@ const interestsRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Interests })
   .delete(
     '/:id',
     async ({ params, user, status }) => {
-      try {
-        if (!(await isUserAdmin(db, user.id))) {
-          return status(403, { error: 'Admin access required' })
-        }
-
-        await deleteInterest(db, params.id)
-
-        return { success: true }
-      } catch (error) {
-        const routeError = toRouteError(error, 'Failed to delete interest')
-        return status(routeError.status, routeError.body)
+      if (!(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Admin access required' })
       }
+
+      await deleteInterest(db, params.id)
+
+      return { success: true }
     },
     { auth: true, params: NumberIdParamsSchema },
   )

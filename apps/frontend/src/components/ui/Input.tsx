@@ -1,4 +1,4 @@
-import type { CSSProperties, ChangeEventHandler, ReactNode } from 'react'
+import type { ChangeEventHandler, CSSProperties, ReactNode } from 'react'
 import { useId, useState } from 'react'
 
 type FieldProps<TElement> = Readonly<{

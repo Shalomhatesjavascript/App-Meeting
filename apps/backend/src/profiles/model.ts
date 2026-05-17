@@ -12,14 +12,12 @@ type ProfileRes = Promise<ProfileSelectDB | undefined>
 /**
  * Create a new profile.
  */
-export async function createProfile(db: DB, userId: string, input: ProfileInsertDB): ProfileRes {
-  const resolved = { ...input, userId } as const satisfies ProfileInsertDB
-
+export async function createProfile(db: DB, input: ProfileInsertDB): ProfileRes {
   const [created] = await db
     .insert(ProfilesTable)
-    .values(resolved)
+    .values(input)
     .onConflictDoUpdate({
-      set: resolved,
+      set: input,
       target: ProfilesTable.userId,
     })
     .returning()

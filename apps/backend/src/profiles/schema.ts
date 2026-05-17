@@ -5,11 +5,16 @@ import { ProfileGenderEnum, ProfileIntentEnum } from './enum'
 
 // TODO: combine this into the user meta data table
 export const ProfilesTable = sqlite.sqliteTable('profiles', {
+  alias: sqlite.text({ length: 50 }).notNull(), // user-facing display name
   avatarSeed: sqlite.text({ length: 100 }).notNull().default('default'),
 
-  avatarStyle: sqlite.text({ length: 50 }).notNull().default('notionists'),
-
-  alias: sqlite.text({ length: 50 }).notNull(), // user-facing display name
+  avatarStyle: sqlite
+    .text({
+      enum: ['notionists', 'fun-emoji', 'adventurer', 'big-smile', 'lorelei', 'personas'],
+      length: 50,
+    })
+    .notNull()
+    .default('notionists'),
 
   bio: sqlite.text(),
 
@@ -31,6 +36,9 @@ export const ProfilesTable = sqlite.sqliteTable('profiles', {
 
   /** Like school id */
   isIdVerified: sqlite.integer({ mode: 'boolean' }).notNull().default(false),
+
+  /** Whether the user has filled up their profile selection */
+  isComplete: sqlite.integer({ mode: 'boolean' }).notNull().default(false),
 
   level: sqlite.integer().$type<UniversityLevelOutput>().notNull(),
 

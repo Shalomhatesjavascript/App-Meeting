@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useUserQuery } from '../hooks/useUser'
+import { useProfileQuery } from '../hooks/useProfile'
 
-export function RequireAuth({ children }: Readonly<{ children: ReactNode }>) {
-  const { isAuthenticated, loading } = useAuth()
+export function RequireVerified({ children }: Readonly<{ children: ReactNode }>) {
+  const userQuery = useUserQuery()
   const location = useLocation()
+  const isLoading = userQuery.isLoading || userQuery.isPending
+  const isAuthenticated = !userQuery.error && userQuery.data
 
-  if (loading) {
+  if (isLoading) {
     return <PageLoader />
   }
 
@@ -17,26 +20,16 @@ export function RequireAuth({ children }: Readonly<{ children: ReactNode }>) {
   return children
 }
 
-export function RequireVerified({ children }: Readonly<{ children: ReactNode }>) {
-  const { isAuthenticated, loading } = useAuth()
-  const location = useLocation()
-
-  if (loading) return <PageLoader />
-
-  if (!isAuthenticated) {
-    return <Navigate replace state={{ from: location }} to="/login" />
-  }
-
-  return children
-}
-
 export function RequireGuest({ children }: Readonly<{ children: ReactNode }>) {
-  const { isAuthenticated, isProfileComplete, loading } = useAuth()
+  const userQuery = useUserQuery()
+  const { data: profile } = useProfileQuery()
+  const isLoading = userQuery.isLoading || userQuery.isPending
+  const isAuthenticated = !userQuery.error && userQuery.data
 
-  if (loading) return <PageLoader />
+  if (isLoading) return <PageLoader />
 
   if (isAuthenticated) {
-    if (!isProfileComplete) return <Navigate replace to="/setup-profile" />
+    if (!profile?.isIdVerified) return <Navigate replace to="/setup-profile" />
     return <Navigate replace to="/app/discover" />
   }
 

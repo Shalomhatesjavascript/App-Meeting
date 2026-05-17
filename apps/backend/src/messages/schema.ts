@@ -1,6 +1,5 @@
 import * as sqlite from 'drizzle-orm/sqlite-core'
 import { MatchesTable } from '../matches/schema'
-import { UserMetaTable } from '../user/schema'
 import { users } from '../utils/auth/schema'
 
 export const MessageTable = sqlite.sqliteTable(

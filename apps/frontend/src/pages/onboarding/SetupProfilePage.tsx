@@ -4,17 +4,18 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { DEPARTMENTS, getInterestsCatalog, INTENTS, LEVELS } from '../../api/catalog'
-import { saveProfile } from '../../api/profile'
+import { DEPARTMENTS, INTENTS, LEVELS } from '../../shared/catalog'
 import { AvatarPicker } from '../../components/AvatarPicker'
 import { Button } from '../../components/ui/Button'
 import { Textarea } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { useAuth } from '../../context/AuthContext'
-import type { AvatarStyle, FrontendProfile } from '../../types'
+import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
+import { useSaveProfileMutation } from '../../hooks/useProfile'
+import type { AvatarChoice, AvatarStyle, FrontendProfile, ProfileFormValues } from '../../types'
+import { useUserQuery } from '../../hooks/useUser'
 
 const STEPS = ['avatar', 'basics', 'intent', 'interests', 'bio'] as const
-type IntentValue = 'dating' | 'friendship' | 'networking' | 'study buddy'
+type IntentValue = 'Dating' | 'Friendship' | 'Networking' | 'Studying'
 type ProfileDraft = Readonly<{
   alias: string
   avatarSeed: string
@@ -22,7 +23,7 @@ type ProfileDraft = Readonly<{
   bio: string
   department: string
   fullName: string
-  gender: string
+  gender: FrontendProfile['gender'] | ''
   intent: IntentValue
   interests: string[]
   isIdVerified: boolean
@@ -32,30 +33,33 @@ type SetField = <K extends keyof ProfileDraft>(field: K) => (value: ProfileDraft
 
 export default function SetupProfilePage() {
   const navigate = useNavigate()
-  const { user, updateUser } = useAuth()
+  const { data: userData } = useUserQuery()
   const { showToast } = useApp()
+  const interestsCatalogQuery = useInterestsCatalogQuery()
+  const saveProfileMutation = useSaveProfileMutation()
 
   const [step, setStep] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [interestOptions, setInterestOptions] = useState<readonly string[]>([])
+  const interestOptions = interestsCatalogQuery.data || []
 
   const [profile, setProfile] = useState<ProfileDraft>({
-    alias: user?.name?.split(' ')[0] || 'Student',
+    alias: userData?.name?.split(' ')[0] || 'Student',
     avatarSeed: 'felix',
     avatarStyle: 'notionists',
     bio: '',
     department: '',
-    fullName: user?.name || '',
+    fullName: userData?.name || '',
     gender: '',
-    intent: 'friendship',
-    isIdVerified: false,
+    intent: 'Friendship',
     interests: [],
+    isIdVerified: false,
     level: 100,
   })
 
   useEffect(() => {
-    getInterestsCatalog().then((options) => setInterestOptions(Array.from(options)))
-  }, [])
+    if (interestsCatalogQuery.isError) {
+      showToast({ message: 'Failed to load interests', type: 'error' })
+    }
+  }, [interestsCatalogQuery.isError, showToast])
 
   const setField: SetField =
     <K extends keyof ProfileDraft>(field: K) =>
@@ -88,10 +92,21 @@ export default function SetupProfilePage() {
       return
     }
     // Final step — save
-    setSaving(true)
     try {
-      const savedProfile: FrontendProfile = (await saveProfile(profile)).profile
-      updateUser({ profile: savedProfile, profileComplete: true })
+      if (!userData?.id) {
+        throw new Error('User not loaded')
+      }
+
+      const payload = {
+        ...profile,
+        gender: profile.gender || 'RatherNotSay',
+        level: Number(profile.level) as ProfileFormValues['level'],
+        userId: userData.id,
+      } as ProfileFormValues & { userId: string }
+      const result = await saveProfileMutation.mutateAsync(payload)
+      if (!result.profile) {
+        throw new Error('Failed to save profile')
+      }
       showToast({ message: 'Profile created! Welcome 🎉', type: 'success' })
       navigate('/app/discover', { replace: true })
     } catch (err) {
@@ -99,8 +114,6 @@ export default function SetupProfilePage() {
         message: err instanceof Error ? err.message : 'Failed to save profile',
         type: 'error',
       })
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -212,7 +225,7 @@ export default function SetupProfilePage() {
         <Button
           disabled={!canProceed()}
           fullWidth
-          loading={saving}
+          loading={saveProfileMutation.isPending}
           onClick={handleNext}
           size="lg"
           variant={step === totalSteps - 1 ? 'amber' : 'primary'}
@@ -230,7 +243,7 @@ function StepAvatar({
   profile,
   onSelect,
 }: Readonly<{
-  onSelect: (choice: { seed: string; style: string }) => void
+  onSelect: (choice: AvatarChoice) => void
   profile: ProfileDraft
 }>) {
   return (
@@ -242,7 +255,7 @@ function StepAvatar({
       </p>
       <AvatarPicker
         onSelect={onSelect}
-        selected={{ seed: profile.avatarSeed, style: profile.avatarStyle }}
+        selected={{ avatarSeed: profile.avatarSeed, avatarStyle: profile.avatarStyle }}
       />
     </div>
   )
@@ -313,7 +326,9 @@ function StepBasics({
           {['Male', 'Female', 'Other'].map((g) => (
             <button
               key={g}
-              onClick={() => setField('gender')(g.toLowerCase())}
+              onClick={() =>
+                setField('gender')((g === 'Other' ? 'RatherNotSay' : g) as ProfileDraft['gender'])
+              }
               style={{
                 background: profile.gender === g.toLowerCase() ? 'var(--color-navy)' : '#fff',
                 border: `2px solid ${profile.gender === g.toLowerCase() ? 'var(--color-navy)' : 'var(--border-medium)'}`,
@@ -388,10 +403,10 @@ function StepIntent({
                 {intent.label}
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
-                {intent.id === 'friendship' && 'Find people to hang out and vibe with'}
-                {intent.id === 'dating' && 'Explore romantic connections on campus'}
-                {intent.id === 'networking' && 'Build professional relationships'}
-                {intent.id === 'study buddy' && 'Find focused, like-minded study partners'}
+                {intent.id === 'Friendship' && 'Find people to hang out and vibe with'}
+                {intent.id === 'Dating' && 'Explore romantic connections on campus'}
+                {intent.id === 'Networking' && 'Build professional relationships'}
+                {intent.id === 'Studying' && 'Find focused, like-minded study partners'}
               </p>
             </div>
             {profile.intent === intent.id && (

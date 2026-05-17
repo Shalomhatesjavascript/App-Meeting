@@ -2,35 +2,27 @@
 // Matches Page
 // ============================================
 
-import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getMatches } from '../../api/matches'
 import { Avatar } from '../../components/Avatar'
 import { BottomNav } from '../../components/BottomNav'
 import { useApp } from '../../context/AppContext'
+import { useMatchesQuery } from '../../hooks/useMatches'
 import type { MatchCard } from '../../types'
 
 export default function MatchesPage() {
   const navigate = useNavigate()
   const { showToast } = useApp()
-  const [matches, setMatches] = useState<MatchCard[]>([])
-  const [loading, setLoading] = useState(true)
+  const matchesQuery = useMatchesQuery()
+  const matches: MatchCard[] = matchesQuery.data || []
+  const loading = matchesQuery.isLoading
 
   useEffect(() => {
-    const loadMatches = async () => {
-      try {
-        const data = await getMatches()
-        setMatches(data)
-      } catch {
-        showToast({ message: 'Failed to load matches', type: 'error' })
-      } finally {
-        setLoading(false)
-      }
+    if (matchesQuery.isError) {
+      showToast({ message: 'Failed to load matches', type: 'error' })
     }
-
-    loadMatches()
-  }, [showToast])
+  }, [matchesQuery.isError, showToast])
 
   const handleOpenChat = (match: MatchCard) => {
     navigate(`/app/messages/${match.id}`)
@@ -311,7 +303,7 @@ function formatTime(isoString?: string) {
   const day = 86400000
   if (diff < day) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   if (diff < 7 * day) return date.toLocaleDateString([], { weekday: 'short' })
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString([], { day: 'numeric', month: 'short' })
 }
 
 const pageStyle: CSSProperties = {

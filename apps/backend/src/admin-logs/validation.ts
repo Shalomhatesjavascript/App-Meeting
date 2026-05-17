@@ -2,15 +2,6 @@ import { createInsertSchema, createUpdateSchema } from 'drizzle-valibot'
 import * as v from 'valibot'
 import { AdminLogTable } from './schema'
 
-const PositiveIntSchema = v.pipe(
-  v.unknown(),
-  v.toNumber(),
-  v.finite(),
-  v.integer(),
-  v.safeInteger(),
-  v.minValue(1),
-)
-
 const ActionDescriptionSchema = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(255))
 
 export const AdminLogCreateSchema = createInsertSchema(AdminLogTable, {
