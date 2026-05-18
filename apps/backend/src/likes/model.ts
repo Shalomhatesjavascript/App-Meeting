@@ -201,7 +201,9 @@ export async function getLikesForUser(
   }
 }
 
-// TODO: revisit this later
+// Returns mutual likes using a self-join between likes rows.
+// Consider optimizing this query for large-scale datasets if performance becomes
+// an issue (for example by denormalizing or adding a dedicated materialized view).
 export async function getMutualLikes(
   db: DB,
   userId: string,

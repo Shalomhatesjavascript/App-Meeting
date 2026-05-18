@@ -9,7 +9,8 @@ import {
 
 type InterestRes = Promise<InterestSelectDB | undefined>
 
-// TODO: Remove this
+// Helper: create an interest row (used by admin APIs). Keeping this helper
+// improves testability and centralizes insertion logic.
 export async function createInterest(db: DB, data: InterestInsertDB): InterestRes {
   const [inserted] = await db.insert(InterestsTable).values(data).returning()
 

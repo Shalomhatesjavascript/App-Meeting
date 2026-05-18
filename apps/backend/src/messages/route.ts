@@ -18,7 +18,8 @@ import { MessageInsertSchema, MessageQuerySchema } from './validation'
 
 const MatchIdParamsSchema = v.object({ match_id: PositiveIntSchema })
 
-// TODO: revisit these routes later when trying to integrate it with the frontend.
+// Messages routes: enforce participant/admin access for reads and writes.
+// Frontend contract expects `/api/messages/match/:match_id` for match message lists.
 const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
   .use(betterAuthRoute)
   // Get all messages for a match for a user

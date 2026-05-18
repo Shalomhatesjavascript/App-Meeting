@@ -23,7 +23,8 @@ const profilesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Profiles })
     },
     { auth: true },
   )
-  // Get profile by user_id. TODO: ensure that this is equivalent to /me for non-admins
+  // Get profile by user_id. Behavior: authenticated users can fetch profiles;
+  // the full `fullName` field is returned only to the profile owner or admins.
   .get(
     '/:id',
     async ({ params: { id }, status, user }) => {

@@ -17,7 +17,17 @@ Assuming all dependencies are already installed (`bun install`), and the termina
 
 The backend will use your local Wrangler D1 state for runtime DB access.
 
-Temporary note: email verification still has a `123456` bypass in `AuthModel.verify` until real verification tokens are added.
+<!-- Removed stale note about demo OTP bypass. The live auth flow sends OTP emails. -->
+
+## Architecture note
+
+- **Users**: authentication records and login metadata (Better Auth-managed).
+- **Profiles**: user-facing profile fields (alias, bio, avatar, intent, level, isComplete) stored in `profiles`.
+- **UserMeta**: role and verification flags in `userMeta` used for access and feature gating.
+- **UserInterests**: join table linking users to `interests` used by discovery scoring.
+- **Likes / Matches / Messages**: interaction tables driving mutual matches and chat flows.
+
+Keep backend source-of-truth in `apps/backend/src/` and API surface documented in `API_ROUTES.md`.
 
 ## Core commands
 

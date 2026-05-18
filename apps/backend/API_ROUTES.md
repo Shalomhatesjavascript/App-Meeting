@@ -7,7 +7,7 @@ This document is a frontend-facing reference for all currently registered backen
 - Local dev (example): `http://localhost:8787`
 - Health check: `GET /health`
 
-All listed routes below are relative to the backend base URL.
+All listed routes below are relative to the backend base URL. All feature routes are mounted under the `/api/` prefix (for example `/api/users`, `/api/profiles`).
 
 ## Auth Model (Current)
 
@@ -57,26 +57,26 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 | POST | `/api/better-auth/sign-out` | User | none | Clears session cookie |
 | GET | `/api/better-auth/get-session` | User | none | Returns current session/user |
 
-## Users (`/users`)
+## Users (`/api/users`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
 | POST | `/users` | Admin | `UserCreateSchema` | Create user |
-| GET | `/users` | User | none | Admin gets full list; non-admin gets discoverable subset |
-| GET | `/users/search` | User | `q`, `limit`, `offset` | Searches by email/alias/full name/department |
-| GET | `/users/:id` | User/Admin (owner) | `id` path param | Admin or same user only |
-| PATCH | `/users/:id` | User/Admin (owner) | `UserUpdateSchema` + `id` | Admin or same user only |
-| DELETE | `/users/:id` | Admin | `id` path param | Delete user |
-| POST | `/users/:id/ban` | Admin | `id` path param | Sets `is_banned = 1` |
-| POST | `/users/:id/approve` | Admin | `id` path param | Sets `is_approved = 1` |
-| GET | `/users/:id/stats` | Admin | `id` path param | Returns user engagement stats |
+| GET | `/api/users` | User | none | Admin gets full list; non-admin gets discoverable subset |
+| GET | `/api/users/search` | User | `q`, `limit`, `offset` | Searches by email/alias/full name/department |
+| GET | `/api/users/:id` | User/Admin (owner) | `id` path param | Admin or same user only |
+| PATCH | `/api/users/:id` | User/Admin (owner) | `UserUpdateSchema` + `id` | Admin or same user only |
+| DELETE | `/api/users/:id` | Admin | `id` path param | Delete user |
+| POST | `/api/users/:id/ban` | Admin | `id` path param | Sets `is_banned = 1` |
+| POST | `/api/users/:id/approve` | Admin | `id` path param | Sets `is_approved = 1` |
+| GET | `/api/users/:id/stats` | Admin | `id` path param | Returns user engagement stats |
 
 ## Profiles (`/api/profiles`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
 | GET | `/api/profiles/me` | User | none | Current user profile |
-| GET | `/api/profiles/:id` | Public | `id` path param | Profile by user id. Hides `fullName` unless requester is the owner or admin. |
+| GET | `/api/profiles/:id` | User | `id` path param | Profile by user id. Requires auth; hides `fullName` unless requester is the owner or admin. |
 | POST | `/api/profiles` | User | `ProfileCreateSchema` | Creates profile for requester. Includes persisted avatar seed/style fields. |
 | PUT | `/api/profiles/:id` | User/Admin (owner) | `ProfileUpdateSchema` + `id` | Update profile. Includes persisted avatar seed/style fields. |
 | DELETE | `/api/profiles/:id` | User/Admin (owner) | `id` path param | Delete profile |
@@ -91,38 +91,38 @@ These are managed by Better Auth and should be consumed via the Better Auth clie
 | PUT | `/interests/:id` | Admin | `InterestUpdateSchema` + `id` | Update interest |
 | DELETE | `/interests/:id` | Admin | `id` path param | Delete interest |
 
-## User Interests (`/user-interests`)
+## User Interests (`/api/user-interests`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/user-interests/:id` | Public | `id` path param | List interests for user |
-| POST | `/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Add interest to user |
-| DELETE | `/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Remove interest from user |
+| GET | `/api/user-interests/:id` | User/Admin (owner) | `id` path param | List interests for user (admin or the user only) |
+| POST | `/api/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Add interest to user |
+| DELETE | `/api/user-interests` | User/Admin (owner) | `{ user_id, interest_id }` | Remove interest from user |
 
-## Likes (`/likes`)
-
-| Method | Path | Access | Body / Query | Notes |
-|---|---|---|---|---|
-| POST | `/likes` | User/Admin (owner) | `LikeCreateSchema` | Like/pass action |
-| GET | `/likes/mutual` | User/Admin (owner) | `user_id` (optional query) | Mutual likes for user |
-| GET | `/likes/:id` | User | `id` path param | Fetch like by id |
-| GET | `/likes` | User/Admin (owner) | `user_id` (optional), `type` (`sent` or `received`) | List likes |
-
-## Matches (`/matches`)
+## Likes (`/api/likes`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| POST | `/matches` | Admin | `MatchCreateSchema` | Create match (system/admin) |
-| GET | `/matches` | User | none | List matches for requester |
-| GET | `/matches/:id` | User/Admin (participant) | `id` path param | Participant/admin only |
+| POST | `/api/likes` | User/Admin (owner) | `LikeCreateSchema` | Like/pass action |
+| GET | `/api/likes/mutual` | User/Admin (owner) | `user_id` (optional query) | Mutual likes for user |
+| GET | `/api/likes/:id` | User | `id` path param | Fetch like by id |
+| GET | `/api/likes` | User/Admin (owner) | `user_id` (optional), `type` (`sent` or `received`) | List likes |
 
-## Messages (`/messages`)
+## Matches (`/api/matches`)
 
 | Method | Path | Access | Body / Query | Notes |
 |---|---|---|---|---|
-| GET | `/messages/:match_id` | User/Admin (participant) | `match_id` path, `limit` query | Paginated match messages (positive integer query values) |
-| POST | `/messages` | User/Admin (owner) | `MessageCreateSchema` | Send message |
-| POST | `/messages/:id/read` | User | `id` path param | Mark message as read |
+| POST | `/api/matches` | Admin | `MatchCreateSchema` | Create match (system/admin) |
+| GET | `/api/matches` | User | none | List matches for requester |
+| GET | `/api/matches/:id` | User/Admin (participant) | `id` path param | Participant/admin only |
+
+## Messages (`/api/messages`)
+
+| Method | Path | Access | Body / Query | Notes |
+|---|---|---|---|---|
+| GET | `/api/messages/match/:match_id` | User/Admin (participant) | `match_id` path, `limit` query | Paginated match messages (positive integer query values) |
+| POST | `/api/messages` | User/Admin (owner) | `MessageCreateSchema` | Send message |
+| POST | `/api/messages/:id/read` | User/Admin (participant) | `id` path param | Mark message as read |
 
 ## Subscriptions (`/subscriptions`)
 

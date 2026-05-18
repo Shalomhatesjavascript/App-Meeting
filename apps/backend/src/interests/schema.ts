@@ -1,7 +1,9 @@
 import * as sqlite from 'drizzle-orm/sqlite-core'
 import { InterestNameEnum } from './enum'
 
-// TODO: IS there a point of this if I can just include the interest directly in the user table?
+// Interests are stored in a dedicated table to enable many-to-many relations
+// (via `user_interests`) and to keep interest canonical values centralized
+// for discovery scoring and UI selection.
 export const InterestsTable = sqlite.sqliteTable('interests', {
   id: sqlite.integer().primaryKey({ autoIncrement: true }),
   name: sqlite

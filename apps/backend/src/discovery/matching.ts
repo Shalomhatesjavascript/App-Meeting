@@ -81,7 +81,9 @@ export function calculateScore(
  * - Only includes verified users
  * - Returns top N candidates by score (descending)
  *
- * TODO: optimize and reduce db queries
+ * Note: current implementation favors clarity. For very large user bases this
+ * implementation may require optimization to reduce DB round-trips and memory
+ * pressure (for example, by streaming results or using fewer joins).
  *
  * @param db Database instance
  * @param userId Current user ID
@@ -145,8 +147,8 @@ export async function getDiscoveryCandidates(
         email: users.email,
         gender: ProfilesTable.gender,
         intent: ProfilesTable.intent,
-        level: ProfilesTable.level,
         isVerified: UserMetaTable.isVerified,
+        level: ProfilesTable.level,
         userId: ProfilesTable.userId,
       })
       .from(ProfilesTable)
@@ -229,11 +231,11 @@ export async function getDiscoveryCandidates(
         bio: candidate.bio,
         department: candidate.department,
         email: candidate.email,
-        id: candidate.userId,
         gender: candidate.gender,
-        isVerified: candidate.isVerified,
+        id: candidate.userId,
         intent: candidate.intent,
         interestNames,
+        isVerified: candidate.isVerified,
         level: candidate.level,
         name: candidate.alias,
         score,

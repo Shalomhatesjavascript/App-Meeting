@@ -85,8 +85,10 @@ export async function getUserById(db: DrizzleD1Database, userId: string): UserRe
 
 /**
  * List all users (admin only).
- *
- * TODO: add pagination
+
+ * Note: this function supports `limit`/`offset` parameters already; see the
+ * function signature for usage. Consider cursor-based pagination in future
+ * work for more robust large-result handling.
  */
 export async function listUsers(
   db: DrizzleD1Database,

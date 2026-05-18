@@ -3,7 +3,10 @@ import * as sqlite from 'drizzle-orm/sqlite-core'
 import { users } from '../utils/auth/schema'
 import { ProfileGenderEnum, ProfileIntentEnum } from './enum'
 
-// TODO: combine this into the user meta data table
+// Profiles are stored in a separate `profiles` table for clarity and to keep
+// user authentication data (Better Auth) distinct from user-facing profile fields.
+// Consider combining into a `user_meta` table in future refactors if schema
+// consolidation becomes necessary.
 export const ProfilesTable = sqlite.sqliteTable('profiles', {
   alias: sqlite.text({ length: 50 }).notNull(), // user-facing display name
   avatarSeed: sqlite.text({ length: 100 }).notNull().default('default'),
@@ -34,11 +37,11 @@ export const ProfilesTable = sqlite.sqliteTable('profiles', {
     })
     .notNull(),
 
-  /** Like school id */
-  isIdVerified: sqlite.integer({ mode: 'boolean' }).notNull().default(false),
-
   /** Whether the user has filled up their profile selection */
   isComplete: sqlite.integer({ mode: 'boolean' }).notNull().default(false),
+
+  /** Like school id */
+  isIdVerified: sqlite.integer({ mode: 'boolean' }).notNull().default(false),
 
   level: sqlite.integer().$type<UniversityLevelOutput>().notNull(),
 
