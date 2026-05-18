@@ -1,4 +1,3 @@
-import { AuthErrorCodeEnum } from '@repo/shared'
 import { and, eq, gte, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { type MatchSelectDB, MatchesTable as matchesTable } from '../matches/schema'
@@ -128,9 +127,9 @@ type CreateOrUpdateLikeRes = Omit<MaybeCreateMatchRes, 'created'> & { like: Like
 export async function createOrUpdateLike(
   db: DB,
   input: LikeInsertDB,
-): Promise<CreateOrUpdateLikeRes> {
+): Promise<CreateOrUpdateLikeRes | null> {
   if (input.fromUserId === input.toUserId) {
-    throw createRouteError(AuthErrorCodeEnum.ValidationError, 'You cannot like yourself')
+    return null
   }
 
   const existing = await db

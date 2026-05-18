@@ -20,6 +20,9 @@ const likesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Likes })
       }
 
       const result = await createOrUpdateLike(db, body)
+
+      if (!result) return status(401)
+
       return result
     },
     { auth: true, body: LikeInsertSchema },

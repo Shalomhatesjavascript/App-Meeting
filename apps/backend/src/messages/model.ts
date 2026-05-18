@@ -16,21 +16,34 @@ async function ensureMatchMember(matchId: number, userId: string): Promise<boole
   return match.user1Id === uid || match.user2Id === uid
 }
 
-async function ensureMessageParticipant(messageId: number, userId: string): Promise<boolean> {
+type MessageAccess = Readonly<{
+  allowed: boolean
+  exists: boolean
+}>
+
+async function getMessageAccess(messageId: number, userId: string): Promise<MessageAccess> {
   const uid = String(userId)
   const row = await db
-    .select({ matchId: MessageTable.matchId })
+    .select({
+      messageId: MessageTable.id,
+      user1Id: MatchesTable.user1Id,
+      user2Id: MatchesTable.user2Id,
+    })
     .from(MessageTable)
     .innerJoin(MatchesTable, eq(MessageTable.matchId, MatchesTable.id))
-    .where(
-      and(
-        eq(MessageTable.id, messageId),
-        or(eq(MatchesTable.user1Id, uid), eq(MatchesTable.user2Id, uid)),
-      ),
-    )
+    .where(eq(MessageTable.id, messageId))
     .get()
 
-  return !!row
+  if (!row) {
+    return { allowed: false, exists: false }
+  }
+
+  const allowed = row.user1Id === uid || row.user2Id === uid
+  return { allowed, exists: true }
+}
+
+export async function canReadMessage(messageId: number, userId: string): Promise<MessageAccess> {
+  return getMessageAccess(messageId, userId)
 }
 
 /**
@@ -53,8 +66,8 @@ export async function createMessage(input: MessageInsertDB) {
  */
 export async function markMessageAsRead(id: number, userId?: string) {
   if (userId !== undefined) {
-    const allowed = await ensureMessageParticipant(id, userId)
-    if (!allowed) {
+    const access = await getMessageAccess(id, userId)
+    if (!access.allowed) {
       return null
     }
   }

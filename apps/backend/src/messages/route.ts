@@ -3,17 +3,18 @@ import { Elysia } from 'elysia'
 import * as v from 'valibot'
 import { ApiRoutePrefixEnum } from '../shared/route-prefixes'
 import { NumberIdParamsSchema } from '../shared/schema'
-import { isUserAdminOrSelf } from '../user/model'
+import { isUserAdmin, isUserAdminOrSelf } from '../user/model'
 import { betterAuthRoute } from '../utils/auth'
 import { db } from '../utils/db'
 import {
   canReadMatchMessages,
+  canReadMessage,
   createMessage,
   getMessagesForMatch,
   markMessageAsRead,
 } from './model'
-import { MessageInsertSchema, MessageQuerySchema } from './validation'
 import type { MessageInsertDB } from './schema'
+import { MessageInsertSchema, MessageQuerySchema } from './validation'
 
 const MatchIdParamsSchema = v.object({ match_id: PositiveIntSchema })
 
@@ -46,6 +47,10 @@ const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
       }
 
       const message = await createMessage(payload)
+      if (!message) {
+        return status(403, { error: 'Access denied' })
+      }
+
       return message
     },
     { auth: true, body: MessageInsertSchema },
@@ -54,7 +59,17 @@ const messagesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Messages })
   .post(
     '/:id/read',
     async ({ params, user, status }) => {
-      const updated = await markMessageAsRead(params.id, user.id)
+      const access = await canReadMessage(params.id, user.id)
+
+      if (!access.exists) {
+        return status(404, { error: 'Message not found' })
+      }
+
+      if (!access.allowed && !(await isUserAdmin(db, user.id))) {
+        return status(403, { error: 'Access denied' })
+      }
+
+      const updated = await markMessageAsRead(params.id)
 
       if (!updated) {
         return status(404, { error: 'Message not found' })
