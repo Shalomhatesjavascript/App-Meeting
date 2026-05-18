@@ -23,7 +23,12 @@ export function useDiscoveryRecommendationsQuery({
   offset = 0,
 }: DiscoveryQueryParams = {}) {
   return useQuery({
-    queryFn: () => backendApi.api.discovery.recommendations.get({ query: { limit, offset } }),
+    queryFn: async () => {
+      const { data } = await backendApi.api.discovery.recommendations.get({
+        query: { limit, offset },
+      })
+      return data
+    },
     queryKey: queryKeys.discoveryRecommendations(limit, offset),
   })
 }
@@ -36,8 +41,12 @@ export function usePossibleMatchesQuery({
   minScore = 100,
 }: PossibleMatchesQueryParams = {}) {
   return useQuery({
-    queryFn: () =>
-      backendApi.api.discovery['possible-matches'].get({ query: { limit, offset, minScore } }),
+    queryFn: async () => {
+      const { data } = await backendApi.api.discovery['possible-matches'].get({
+        query: { limit, minScore, offset },
+      })
+      return data
+    },
     queryKey: queryKeys.discoveryPossibleMatches(limit, offset, minScore),
   })
 }

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authClient } from '../lib/auth-client'
 import backendApi from '../server/eden-treaty'
 import type { ChatMessage, MatchCard } from '../types'
-import { queryKeys } from './query-keys'
+import { QueryKeyEnum, queryKeys } from './query-keys'
 
 async function getCurrentUserId() {
   const session = await authClient.getSession()
@@ -152,7 +152,8 @@ export function useMarkMessageReadMutation(messageId: number) {
   return useMutation({
     mutationFn: () => backendApi.api.messages({ id: messageId }).read.post(),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.messages(messageId) })
+      // Invalidate all message lists and matches so read state updates everywhere.
+      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.User, QueryKeyEnum.Messages] })
       void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
     },
   })

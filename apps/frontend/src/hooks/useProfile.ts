@@ -1,7 +1,7 @@
 import type { ProfileInsertDB, ProfileSelectDB, ProfileUpdateDB } from '@repo/backend'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import backendApi from '../server/eden-treaty'
-import { QueryKeyEnum } from './query-keys'
+import { queryKeys } from './query-keys'
 
 export function useProfileQuery() {
   return useQuery({
@@ -9,7 +9,7 @@ export function useProfileQuery() {
       const { data } = await backendApi.api.profiles.me.get()
       return data as ProfileSelectDB | null
     },
-    queryKey: [QueryKeyEnum.User, QueryKeyEnum.Profile],
+    queryKey: queryKeys.profile(),
   })
 }
 
@@ -24,10 +24,10 @@ export function useUpdateProfileMutation() {
       return { profile: data as ProfileSelectDB | null }
     },
     onSuccess: ({ profile }) => {
-      if (profile) queryClient.setQueryData([QueryKeyEnum.Profile], profile)
+      if (profile) queryClient.setQueryData(queryKeys.profile(), profile)
 
-      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.Matches] })
-      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.DiscoveryCandidates] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.discoveryCandidates() })
     },
   })
 }
@@ -41,10 +41,10 @@ export function useSaveProfileMutation() {
       return { profile: data as ProfileSelectDB | null }
     },
     onSuccess: ({ profile }) => {
-      if (profile) queryClient.setQueryData([QueryKeyEnum.Profile], profile)
+      if (profile) queryClient.setQueryData(queryKeys.profile(), profile)
 
-      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.Matches] })
-      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.DiscoveryCandidates] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.discoveryCandidates() })
     },
   })
 }

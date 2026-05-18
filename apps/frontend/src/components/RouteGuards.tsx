@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useUserQuery } from '../hooks/useUser'
-import { useProfileQuery } from '../hooks/useProfile'
 
 export function RequireVerified({ children }: Readonly<{ children: ReactNode }>) {
   const userQuery = useUserQuery()
@@ -22,14 +21,14 @@ export function RequireVerified({ children }: Readonly<{ children: ReactNode }>)
 
 export function RequireGuest({ children }: Readonly<{ children: ReactNode }>) {
   const userQuery = useUserQuery()
-  const { data: profile } = useProfileQuery()
   const isLoading = userQuery.isLoading || userQuery.isPending
   const isAuthenticated = !userQuery.error && userQuery.data
 
   if (isLoading) return <PageLoader />
 
   if (isAuthenticated) {
-    if (!profile?.isIdVerified) return <Navigate replace to="/setup-profile" />
+    const profileComplete = Boolean(userQuery.data?.profileComplete)
+    if (!profileComplete) return <Navigate replace to="/setup-profile" />
     return <Navigate replace to="/app/discover" />
   }
 
