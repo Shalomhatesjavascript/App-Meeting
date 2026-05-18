@@ -2,11 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import backendApi from '../server/eden-treaty'
 import type { ExtractFirstFunctionParamter } from '../shared/util'
 import { queryKeys } from './query-keys'
+import { getInterestsCatalog } from '../shared/catalog'
 
 export function useInterestsQuery() {
   return useQuery({
     queryFn: async () => {
+      // TODO: store the interests in the backend rather than using a fallback
       const { data } = await backendApi.api.interests.get()
+
+      if (!data?.length)
+        return (await getInterestsCatalog()).map((interest) => ({
+          name: interest,
+          id: Math.random() * 100000,
+        }))
+
       return data
     },
     queryKey: queryKeys.interests(),

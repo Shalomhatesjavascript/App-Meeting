@@ -48,6 +48,11 @@ const app = new Elysia({ adapter: CloudflareAdapter })
   .use(subscriptionsRoutes)
   .use(discoveryRoutes)
   .use(adminLogsRoutes)
+  .onError((ctx) => {
+    if (ctx.code === 500) {
+      console.error(ctx)
+    }
+  })
   .compile()
 
 export type ElysiaApp = typeof app

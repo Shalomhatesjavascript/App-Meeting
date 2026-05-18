@@ -2,6 +2,7 @@ import type { ProfileInsertDB, ProfileSelectDB, ProfileUpdateDB } from '@repo/ba
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import backendApi from '../server/eden-treaty'
 import { queryKeys } from './query-keys'
+import type { CurrentUserQueryResult } from './useUser'
 
 export function useProfileQuery() {
   return useQuery({
@@ -24,7 +25,20 @@ export function useUpdateProfileMutation() {
       return { profile: data as ProfileSelectDB | null }
     },
     onSuccess: ({ profile }) => {
-      if (profile) queryClient.setQueryData(queryKeys.profile(), profile)
+      if (profile) {
+        queryClient.setQueryData(queryKeys.profile(), profile)
+        queryClient.setQueryData(
+          queryKeys.user(),
+          (existing: CurrentUserQueryResult | null | undefined) =>
+            existing
+              ? {
+                  ...existing,
+                  profile,
+                  profileComplete: profile.isComplete ?? false,
+                }
+              : existing,
+        )
+      }
 
       void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.discoveryCandidates() })
@@ -41,7 +55,20 @@ export function useSaveProfileMutation() {
       return { profile: data as ProfileSelectDB | null }
     },
     onSuccess: ({ profile }) => {
-      if (profile) queryClient.setQueryData(queryKeys.profile(), profile)
+      if (profile) {
+        queryClient.setQueryData(queryKeys.profile(), profile)
+        queryClient.setQueryData(
+          queryKeys.user(),
+          (existing: CurrentUserQueryResult | null | undefined) =>
+            existing
+              ? {
+                  ...existing,
+                  profile,
+                  profileComplete: profile.isComplete ?? false,
+                }
+              : existing,
+        )
+      }
 
       void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.discoveryCandidates() })

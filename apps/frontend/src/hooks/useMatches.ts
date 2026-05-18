@@ -146,14 +146,18 @@ export function useSendMessageMutation(matchId: number) {
   })
 }
 
-export function useMarkMessageReadMutation(messageId: number) {
+// TODO: Call this mutation when a user views a previously unread message once UI flow is wired.
+export function useMarkMessageReadMutation(messageId: number, matchId?: number) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: () => backendApi.api.messages({ id: messageId }).read.post(),
     onSuccess: () => {
-      // Invalidate all message lists and matches so read state updates everywhere.
-      void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.User, QueryKeyEnum.Messages] })
+      if (typeof matchId === 'number') {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.messages(matchId) })
+      } else {
+        void queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.User, QueryKeyEnum.Messages] })
+      }
       void queryClient.invalidateQueries({ queryKey: queryKeys.matches() })
     },
   })

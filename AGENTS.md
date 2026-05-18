@@ -183,26 +183,66 @@ These files contain the product vision, data model suggestions, and functional r
 
 ## Current repo state and known issues
 
-### Known work in progress
-- Email verification flow is currently using a demo SMTP/OTP bypass.
-- Likes, messages, and matches route tests are not fully complete.
-- Backend route tests are generally aged and need review.
-- There are outstanding design questions around the profile schema and interest model.
-- Some route semantics and access control need tightening (for `/profiles/:id`, `/profiles/me`, messages route shapes).
-- Pagination is missing in the `users` list endpoint.
-- Some DB model decisions may be provisional and should be validated before heavy refactors.
+### Implemented and working (verified in code)
+- Better Auth is configured and mounted via `better-auth` in `apps/backend/src/utils/auth.ts`. Email OTP delivery is implemented via `EmailService` and verification/sign-in flows are enabled.
+- Profile CRUD routes exist and enforce admin/self ownership checks at the route layer (`apps/backend/src/profiles/route.ts`).
+- User-interests join table and routes are present and enforce admin/self checks (`apps/backend/src/user-interests/route.ts`).
+- Likes and messages endpoints include participant/admin access checks; routes restrict writes/reads to authorized users (`apps/backend/src/likes/route.ts`, `apps/backend/src/messages/route.ts`).
+- Frontend onboarding flow (`apps/frontend/src/pages/onboarding/SetupProfilePage.tsx`) creates profiles and persists interests to the join table using `useSaveProfileMutation` and `useUserInterests` mutations.
+- Frontend hooks exist for canonical data: `useUserQuery`, `useProfileQuery`, `useUserInterestsQuery`, `useMatchesQuery`, and related mutations (`apps/frontend/src/hooks/*`).
+- Recent frontend fixes: profile save/update mutations now update the `queryKeys.user()` cache so `RequireGuest`/`RequireVerified` route guards immediately see `profileComplete` after onboarding.
 
-### Important TODO items
-- Replace demo email/OTP flow with real email delivery and persistent verification tokens.
-- Add route tests for likes, messages, matches.
-- Review interest table design and whether interests should remain a separate entity.
-- Confirm if profile fields should merge into the user meta table.
-- Optimize discovery/matching queries to reduce memory and database usage.
+### In progress / newly discovered issues
+- Frontend typecheck (`tsc -b`) fails because the backend imports `cloudflare:workers` types; without workspace-wide type mappings or adding the Cloudflare types package, `tsc` surfaces errors when run from frontend. This blocks a full `tsc -b` run across workspace without adding type shim or adjusting `tsconfig` build scope.
 
-### Stability notes
-- Backend route tests exist but are currently outdated and unreliable; do not rely on them for definitive API contracts. Assume information from tests is irrelevant until tests are fixed. Use `API_ROUTES.md` and the route handlers (`apps/backend/src/*/route.ts`) as the more reliable source of truth.
-- `API_ROUTES.md` is the current frontend-facing contract documentation; update it when API behavior changes.
-- The frontend README is mostly template content and may not reflect all custom app behavior.
+### Broken / remains to do (prioritized)
+1. Wire message-read flow: `useMarkMessageReadMutation` exists and has been adjusted to accept an optional `matchId` and invalidate the match-specific `messages(matchId)` cache when provided, but it is not yet invoked by the UI when a user views an unread message. (File: `apps/frontend/src/hooks/useMatches.ts`) — TODO: call this when message list or chat view mounts and contains unread messages.
+2. Message-read cache invalidation: Ensure the server returns sufficient info (e.g., `matchId`) on mark-read, or derive it client-side, and invalidate `queryKeys.messages(matchId)` and `queryKeys.matches()` for correct unread-count updates. (Front: `apps/frontend/src/hooks/useMatches.ts`, Back: `apps/backend/src/messages/route.ts`)
+3. Backend ownership guard audit: While many routes use `isUserAdminOrSelf`, audit `apps/backend/src/user/route.ts` and other routes for any missing `await` usage or logic mistakes that could allow unauthorized actions. The initial plan flagged a missing `await` in `user/route.ts` — verify and patch if present.
+4. Treaty / response-shape audit: Audit `useLikes`, `useDiscovery`, `useUsers` frontend hooks versus backend route response shapes to ensure the UI consumes the exact fields returned by the backend (avoid silent undefineds and runtime errors). Relevant files: `apps/frontend/src/hooks/useLikes.ts`, `apps/frontend/src/hooks/useDiscovery.ts`, `apps/frontend/src/hooks/useUsers.ts` and backend route handlers in `apps/backend/src/*/route.ts`.
+5. Tests: Many route tests are outdated; add focused unit/integration tests for ownership guards and message mark-read behavior: `apps/backend/src/user/model.test.ts`, `apps/backend/src/user/route.test.ts`, `apps/backend/src/user-interests/route.test.ts`, `apps/backend/src/messages/route.test.ts`.
+6. Documentation: Update `apps/backend/API_ROUTES.md` and remove stale notes in `apps/backend/README.md` (for example, an old `123456` email-verification note may remain). Also add a short recent-changes summary to `AGENTS.md` (see below).
+
+### Recent changes (this working session)
+- Patched frontend profile mutations so `onSuccess` updates `queryKeys.user()` (so route guards read `profileComplete` immediately). (File: `apps/frontend/src/hooks/useProfile.ts`)
+- Adjusted `useMarkMessageReadMutation` to accept optional `matchId` and invalidate `queryKeys.messages(matchId)` when available; added a TODO to call it when the user views previously unread messages. (File: `apps/frontend/src/hooks/useMatches.ts`)
+- Updated `AGENTS.md` to reflect the current implemention state and remaining tasks.
+
+### Next actionable steps (recommended order)
+1. Backend audit & fixes (ownership/await): `apps/backend/src/user/route.ts`, `apps/backend/src/profiles/route.ts`, `apps/backend/src/likes/route.ts`, `apps/backend/src/messages/route.ts`, `apps/backend/src/user-interests/route.ts`.
+2. Wire message-read mutation in chat UI and ensure the server response includes `matchId` (or client derives it) so invalidation targets the right query keys.
+3. Run a focused typecheck strategy: add `skipLibCheck` or provide `cloudflare:workers` ambient types to avoid workspace-wide tsc failures while iterating (or run `tsc -p apps/frontend/tsconfig.json` alone during frontend dev).
+4. Audit treaty generated clients vs backend route responses and reconcile any mismatches.
+5. Add/repair tests for ownership and message-read flows, then re-enable broader route tests after stabilization.
+6. Update `apps/backend/API_ROUTES.md` and `apps/backend/README.md` to reflect live behavior and remove misleading TODOs.
+
+### Quick verification commands
+ - Frontend (dev):
+```bash
+cd apps/frontend
+bun run dev
+```
+
+ - Frontend (typecheck only):
+```bash
+cd apps/frontend
+bun run typecheck
+```
+
+ - Backend (dev / DB seed):
+```bash
+cd apps/backend
+bun run onboard
+bun run dev
+```
+
+ - Run backend tests (note: tests are flaky and may need updates):
+```bash
+bun run test --filter apps/backend
+```
+
+### Agent guidance updates
+- When making changes, prefer small, isolated edits with typechecking and focused tests. Avoid changing auth/session behavior unless necessary. Use `queryKeys.user()` as the canonical cache key representing authenticated user + profile presence.
 
 ---
 

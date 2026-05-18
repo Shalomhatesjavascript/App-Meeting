@@ -3,7 +3,7 @@
 // ============================================
 
 import type { CSSProperties } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../../components/Avatar'
 import { AvatarPicker } from '../../components/AvatarPicker'
@@ -23,7 +23,7 @@ import {
   useUserInterestsQuery,
 } from '../../hooks/useUserInterests'
 import { INTENTS } from '../../shared/catalog'
-import type { FrontendProfile, ProfileUpdateValues } from '../../types'
+import type { FrontendProfile } from '../../types'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -47,8 +47,10 @@ export default function ProfilePage() {
   const interestOptions = [...(interestsCatalogQuery.data || [])]
   const loading = profileQuery.isLoading || userInterestsQuery.isLoading
   const saving = updateProfileMutation.isPending
-  const userInterestNames = (userInterestsQuery.data?.map((interest) => interest.name) ??
-    []) as string[]
+  const userInterestNames = useMemo(
+    () => (userInterestsQuery.data?.map((interest) => interest.name) ?? []) as string[],
+    [userInterestsQuery.data],
+  )
 
   useEffect(() => {
     setEditData(
@@ -79,7 +81,7 @@ export default function ProfilePage() {
       const { interests: updatedInterests = [], ...profileUpdates } = editData
 
       if (editSection !== 'interests') {
-        await updateProfileMutation.mutateAsync(profileUpdates as ProfileUpdateValues)
+        await updateProfileMutation.mutateAsync(profileUpdates)
       }
 
       // If editing interests, sync join table

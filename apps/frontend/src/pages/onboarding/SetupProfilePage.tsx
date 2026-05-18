@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { DEPARTMENTS, INTENTS, LEVELS } from '../../shared/catalog'
 import { AvatarPicker } from '../../components/AvatarPicker'
 import { Button } from '../../components/ui/Button'
 import { Textarea } from '../../components/ui/Input'
@@ -11,10 +12,9 @@ import { useApp } from '../../context/AppContext'
 import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
 import { useInterestsQuery } from '../../hooks/useInterests'
 import { useSaveProfileMutation } from '../../hooks/useProfile'
+import type { AvatarChoice, AvatarStyle, FrontendProfile, ProfileFormValues } from '../../types'
 import { useUserQuery } from '../../hooks/useUser'
 import { useAddUserInterestMutation } from '../../hooks/useUserInterests'
-import { DEPARTMENTS, INTENTS, LEVELS } from '../../shared/catalog'
-import type { AvatarChoice, AvatarStyle, FrontendProfile, ProfileFormValues } from '../../types'
 
 const STEPS = ['avatar', 'basics', 'intent', 'interests', 'bio'] as const
 type IntentValue = 'Dating' | 'Friendship' | 'Networking' | 'Studying'
