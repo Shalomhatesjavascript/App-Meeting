@@ -47,8 +47,15 @@ const profilesRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Profiles })
   // Create profile
   .post(
     '/',
-    async ({ body, user }) => {
-      const created = await createProfile(db, { ...body, userId: body.userId ?? user.id })
+    async ({ body, user, status }) => {
+      const targetUserId = body.userId ?? user.id
+
+      if (!(await isUserAdminOrSelf(db, targetUserId, user.id))) {
+        return status(403, { error: 'Access denied' })
+      }
+
+      const created = await createProfile(db, { ...body, userId: targetUserId })
+
       return created
     },
     { auth: true, body: ProfileInsertSchema },

@@ -66,7 +66,7 @@ const usersRoutes = new Elysia({ prefix: ApiRoutePrefixEnum.Users })
   .get(
     '/:id',
     async ({ params, status, user: { id: requesterId } }) => {
-      if (!isUserAdminOrSelf(db, params.id, requesterId)) {
+      if (!(await isUserAdminOrSelf(db, params.id, requesterId))) {
         return status('Forbidden')
       }
 

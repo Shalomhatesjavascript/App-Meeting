@@ -267,5 +267,5 @@ export async function isUserAdminOrSelf(
   idToCheck: string,
   requesterId: string,
 ): Promise<boolean> {
-  return idToCheck === requesterId || isUserAdmin(db, requesterId)
+  return idToCheck === requesterId || (await isUserAdmin(db, requesterId))
 }
