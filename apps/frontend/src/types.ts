@@ -24,6 +24,7 @@ export type ProfileFormValues = Readonly<{
   intent: ProfileSelectDB['intent']
   interests: string[]
   isIdVerified: boolean
+  isComplete?: boolean
   level: ProfileSelectDB['level']
   userId?: string
 }>

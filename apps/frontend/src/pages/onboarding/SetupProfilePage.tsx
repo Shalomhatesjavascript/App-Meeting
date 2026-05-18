@@ -4,15 +4,17 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { DEPARTMENTS, INTENTS, LEVELS } from '../../shared/catalog'
 import { AvatarPicker } from '../../components/AvatarPicker'
 import { Button } from '../../components/ui/Button'
 import { Textarea } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
 import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
+import { useInterestsQuery } from '../../hooks/useInterests'
 import { useSaveProfileMutation } from '../../hooks/useProfile'
-import type { AvatarChoice, AvatarStyle, FrontendProfile, ProfileFormValues } from '../../types'
 import { useUserQuery } from '../../hooks/useUser'
+import { useAddUserInterestMutation } from '../../hooks/useUserInterests'
+import { DEPARTMENTS, INTENTS, LEVELS } from '../../shared/catalog'
+import type { AvatarChoice, AvatarStyle, FrontendProfile, ProfileFormValues } from '../../types'
 
 const STEPS = ['avatar', 'basics', 'intent', 'interests', 'bio'] as const
 type IntentValue = 'Dating' | 'Friendship' | 'Networking' | 'Studying'
@@ -36,7 +38,9 @@ export default function SetupProfilePage() {
   const { data: userData } = useUserQuery()
   const { showToast } = useApp()
   const interestsCatalogQuery = useInterestsCatalogQuery()
+  const interestsQuery = useInterestsQuery()
   const saveProfileMutation = useSaveProfileMutation()
+  const addUserInterestMutation = useAddUserInterestMutation()
 
   const [step, setStep] = useState(0)
   const interestOptions = interestsCatalogQuery.data || []
@@ -97,15 +101,40 @@ export default function SetupProfilePage() {
         throw new Error('User not loaded')
       }
 
+      const { interests: selectedInterests, ...profileDetails } = profile
       const payload = {
-        ...profile,
+        ...profileDetails,
         gender: profile.gender || 'RatherNotSay',
+        isComplete: true,
         level: Number(profile.level) as ProfileFormValues['level'],
         userId: userData.id,
-      } as ProfileFormValues & { userId: string }
+      } as ProfileFormValues & { userId: string; isComplete: true }
       const result = await saveProfileMutation.mutateAsync(payload)
       if (!result.profile) {
         throw new Error('Failed to save profile')
+      }
+
+      if (selectedInterests.length > 0) {
+        if (!interestsQuery.data) {
+          throw new Error('Interests are still loading')
+        }
+
+        const nameToId = new Map<string, number>(
+          interestsQuery.data.map((interest) => [interest.name, interest.id]),
+        )
+        const interestIds = selectedInterests
+          .map((name) => nameToId.get(name))
+          .filter((value): value is number => typeof value === 'number')
+
+        if (interestIds.length === 0) {
+          throw new Error('Failed to map selected interests')
+        }
+
+        await Promise.all(
+          interestIds.map((interestId) =>
+            addUserInterestMutation.mutateAsync({ interestId, userId: userData.id }),
+          ),
+        )
       }
       showToast({ message: 'Profile created! Welcome 🎉', type: 'success' })
       navigate('/app/discover', { replace: true })

@@ -5,7 +5,6 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { INTENTS } from '../../shared/catalog'
 import { Avatar } from '../../components/Avatar'
 import { AvatarPicker } from '../../components/AvatarPicker'
 import { BottomNav } from '../../components/BottomNav'
@@ -13,18 +12,30 @@ import { IntentBadge, VerifiedBadge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Textarea } from '../../components/ui/Input'
 import { useApp } from '../../context/AppContext'
-import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
 import { useLogoutUserMutation } from '../../hooks/useAuthMutations'
+import { useInterestsCatalogQuery } from '../../hooks/useCatalog'
+import { useInterestsQuery } from '../../hooks/useInterests'
 import { useProfileQuery, useUpdateProfileMutation } from '../../hooks/useProfile'
-import type { FrontendProfile, ProfileUpdateValues } from '../../types'
 import { useUserQuery } from '../../hooks/useUser'
+import {
+  useAddUserInterestMutation,
+  useRemoveUserInterestMutation,
+  useUserInterestsQuery,
+} from '../../hooks/useUserInterests'
+import { INTENTS } from '../../shared/catalog'
+import type { FrontendProfile, ProfileUpdateValues } from '../../types'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { data: userData } = useUserQuery()
   const { showToast } = useApp()
+  const userId = userData?.id ?? ''
   const profileQuery = useProfileQuery()
   const interestsCatalogQuery = useInterestsCatalogQuery()
+  const interestsQuery = useInterestsQuery()
+  const userInterestsQuery = useUserInterestsQuery(userId, Boolean(userId))
+  const addInterest = useAddUserInterestMutation()
+  const removeInterest = useRemoveUserInterestMutation()
   const updateProfileMutation = useUpdateProfileMutation()
   const logoutMutation = useLogoutUserMutation()
 
@@ -34,12 +45,16 @@ export default function ProfilePage() {
   const [editData, setEditData] = useState<Partial<FrontendProfile>>({})
   const profile = profileQuery.data || null
   const interestOptions = [...(interestsCatalogQuery.data || [])]
-  const loading = profileQuery.isLoading
+  const loading = profileQuery.isLoading || userInterestsQuery.isLoading
   const saving = updateProfileMutation.isPending
+  const userInterestNames = (userInterestsQuery.data?.map((interest) => interest.name) ??
+    []) as string[]
 
   useEffect(() => {
-    setEditData(profile ? { ...profile } : {})
-  }, [profile])
+    setEditData(
+      profile ? { ...profile, interests: userInterestNames } : { interests: userInterestNames },
+    )
+  }, [profile, userInterestNames])
 
   useEffect(() => {
     if (profileQuery.isError) {
@@ -53,9 +68,46 @@ export default function ProfilePage() {
     }
   }, [interestsCatalogQuery.isError, showToast])
 
+  useEffect(() => {
+    if (userInterestsQuery.isError) {
+      showToast({ message: 'Failed to load your interests', type: 'error' })
+    }
+  }, [userInterestsQuery.isError, showToast])
+
   const handleSaveSection = async () => {
     try {
-      await updateProfileMutation.mutateAsync(editData as ProfileUpdateValues)
+      const { interests: updatedInterests = [], ...profileUpdates } = editData
+
+      if (editSection !== 'interests') {
+        await updateProfileMutation.mutateAsync(profileUpdates as ProfileUpdateValues)
+      }
+
+      // If editing interests, sync join table
+      if (editSection === 'interests' && userId) {
+        if (!interestsQuery.data) {
+          throw new Error('Interests are still loading')
+        }
+
+        const prev = userInterestNames
+        const next = updatedInterests
+        const toAdd = next.filter((i) => !prev.includes(i))
+        const toRemove = prev.filter((i) => !next.includes(i))
+
+        const interestList = interestsQuery.data || []
+        const nameToId = new Map<string, number>(interestList.map((it) => [it.name, it.id]))
+
+        await Promise.all([
+          ...toAdd
+            .map((name) => nameToId.get(name))
+            .filter(Boolean)
+            .map((id) => addInterest.mutateAsync({ interestId: Number(id), userId })),
+          ...toRemove
+            .map((name) => nameToId.get(name))
+            .filter(Boolean)
+            .map((id) => removeInterest.mutateAsync({ interestId: Number(id), userId })),
+        ])
+      }
+
       setEditSection(null)
       showToast({ message: 'Profile updated!', type: 'success' })
     } catch {
@@ -97,6 +149,7 @@ export default function ProfilePage() {
   }
 
   const displayProfile: Partial<FrontendProfile> = profile || {}
+  const displayInterests = userInterestNames
 
   return (
     <div style={pageStyle}>
@@ -467,12 +520,12 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {(displayProfile.interests || []).length === 0 ? (
+              {displayInterests.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                   No interests added yet
                 </p>
               ) : (
-                (displayProfile.interests || []).map((interest) => (
+                displayInterests.map((interest) => (
                   <span
                     key={interest}
                     style={{
